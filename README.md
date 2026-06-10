@@ -8,6 +8,27 @@ Auto DRT Analyzer is a lightweight local tool for working with electrochemical i
 
 The software is designed for users who want a fast and practical workflow from EIS data to DRT visualization, peak information, fitting parameters, and paper-ready figures. It is intentionally simple to operate and is not intended to be a complicated DRT parameter-tuning platform.
 
+## Usage
+
+Browser version
+
+This tool can run directly in a web browser.
+
+1. Download or clone this repository.
+2. Open index.html with a modern browser such as Chrome, Edge, or Safari.
+3. Import your EIS data and start the analysis.
+
+No Python environment or additional installation is required for the browser version.
+
+## Desktop version
+
+A packaged desktop application is currently available only for macOS.
+
+For macOS users, open Auto DRT Analyzer.app.
+If macOS blocks the app on the first launch, right-click the app and select Open.
+
+Windows and Linux desktop versions are not available at this stage. Users on these systems should use the browser version by opening index.html.
+
 ## Key Highlights
 
 - One-click EIS loading and analysis.
