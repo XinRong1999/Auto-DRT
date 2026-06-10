@@ -430,36 +430,4 @@ No copied logos, paid fonts, external images, minified vendor files, or remote C
 
 ## Troubleshooting
 
-### The Fitting Curve Does Not Update After Changing the Circuit
 
-Click `Refit`. Circuit changes mark the current fit as outdated until the fitting calculation is updated.
-
-### The DRT Curve Looks Too Noisy
-
-Try `Auto` lambda, `DRT smooth` mode, or a larger manual lambda value.
-
-### The DRT Peaks Are Not Detected Correctly
-
-Try changing peak sensitivity or add peaks manually by right-clicking the DRT curve.
-
-### The Figure Axis Range Is Not Ideal
-
-Double-click the axis and set the minimum and maximum values manually. Click `Reset` to return to auto range.
-
-### The Exported Figure Has the Wrong Color or Marker Size
-
-Check `Project preferences` before exporting. Figure export uses the current visible settings.
-
-### Area-Normalized Values Look Wrong
-
-Confirm the electrode area in cm². If the area field is empty while an `Ω cm²` label is selected, the software uses area = 1.
-
-### The Wrong Project Is Being Edited
-
-Use the project selector to choose the current project before changing `Project preferences`, circuit settings, DRT point count, or peak settings.
-
-## License / Citation / Acknowledgement
-
-License information has not been specified yet. Add the project license here when it is available.
-
-If you use Auto DRT Analyzer in academic work, please cite or acknowledge the software according to the release or repository guidance. When reporting results, include relevant analysis settings such as circuit model, lambda mode, frequency range, area normalization, and peak handling method.
