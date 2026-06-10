@@ -42,7 +42,7 @@ Windows and Linux desktop versions are not available at this stage. Users on the
 - Multi-project overlay comparison for EIS and DRT.
 - Independent project colors, markers, and legends.
 - Paper-ready PDF figure export.
-- Excel export including EIS data, fitted data, DRT results, peaks, fitting parameters, and analysis settings.
+- Excel export including EIS data.
 
 ## What Can You Use It For?
 
