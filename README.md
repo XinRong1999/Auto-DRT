@@ -447,7 +447,9 @@ The current browser-based version does not bundle third-party JavaScript librari
 | Generated icon assets | macOS app icon | Generated from project icon script/assets | Project license needs manual confirmation |
 | `tools/make-icon.mjs` | Optional icon generation helper | Project source; not required to run the app | Project license needs manual confirmation |
 
-No copied logos, paid fonts, external images, minified vendor files, or remote CDN dependencies were found during the current review. If future third-party libraries are added, their licenses should be listed here before release.
+This project was created by the author with assistance from Codex AI. All source code, interface elements, text, and visual assets are intended to be original. No copied logos, paid fonts, external images, minified vendor files, or remote CDN dependencies were intentionally included.
+
+Any similarity to third-party works is unintended. If a potential infringement issue is identified, please contact the author so that the relevant content can be reviewed and modified or removed promptly.
 
 ## Troubleshooting
 
