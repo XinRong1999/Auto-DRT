@@ -16,7 +16,6 @@ const state = {
   drtAxis: getInitialPreference("auto-drt-axis", "frequency", ["frequency", "f", "tau", "relaxation"]),
   drtYAxisExpression: "gamma_f",
   bodePhaseExpression: getInitialPreference("auto-bode-phase-expression", "phase", ["phase", "theta", "phase_angle", "neg_phase", "neg_theta", "neg_phase_angle"]),
-  bodePhaseReverse: getInitialBool("auto-bode-phase-reverse", false),
   nyquistXLabel: getInitialPreference("auto-nyquist-x-label", "zprime", ["zprime", "zre", "re_z"]),
   nyquistYLabel: getInitialPreference("auto-nyquist-y-label", "neg_zdoubleprime", ["neg_zdoubleprime", "neg_zim", "neg_im_z"]),
   bodeMagnitudeYLabel: getInitialPreference("auto-bode-mag-y-label", "abs_z", ["abs_z", "mod_z", "impedance"]),
@@ -82,9 +81,6 @@ const el = {
   electrodeAreaField: document.getElementById("electrodeAreaField"),
   electrodeAreaLabel: document.getElementById("electrodeAreaLabel"),
   electrodeAreaInput: document.getElementById("electrodeAreaInput"),
-  axisReverseYField: document.getElementById("axisReverseYField"),
-  axisReverseYInput: document.getElementById("axisReverseYInput"),
-  axisReverseYLabel: document.getElementById("axisReverseYLabel"),
   axisRangeAutoInput: document.getElementById("axisRangeAutoInput"),
   axisRangeMinInput: document.getElementById("axisRangeMinInput"),
   axisRangeMaxInput: document.getElementById("axisRangeMaxInput"),
@@ -307,7 +303,6 @@ const translations = {
     negativePhaseDeg: "-Phase / deg.",
     negativeThetaDegree: "-θ / °",
     negativePhaseAngleDegree: "-Phase angle / °",
-    reverseYAxis: "Reverse y-axis",
     showData: "Data",
     showFit: "Fit",
     showDrt: "DRT",
@@ -520,7 +515,6 @@ const translations = {
     negativePhaseDeg: "-Phase / deg.",
     negativeThetaDegree: "-θ / °",
     negativePhaseAngleDegree: "-Phase angle / °",
-    reverseYAxis: "Y軸を反転",
     showData: "データ",
     showFit: "フィット",
     showDrt: "DRT",
@@ -733,7 +727,6 @@ const translations = {
     negativePhaseDeg: "-Phase / deg.",
     negativeThetaDegree: "-θ / °",
     negativePhaseAngleDegree: "-Phase angle / °",
-    reverseYAxis: "反向 y 轴",
     showData: "数据",
     showFit: "拟合",
     showDrt: "DRT",
@@ -890,7 +883,6 @@ const uiBindings = [
   ["axisRangeHeading", "axisRange"],
   ["axisExpressionLabel", "expressionUnit"],
   ["electrodeAreaLabel", "electrodeArea"],
-  ["axisReverseYLabel", "reverseYAxis"],
   ["axisRangeAutoLabel", "autoRange"],
   ["axisRangeMinLabel", "minimum"],
   ["axisRangeMaxLabel", "maximum"],
@@ -1533,14 +1525,12 @@ function resetAreaNormalizationDefaults(datasets = state.datasets) {
   state.drtAxis = "frequency";
   state.drtYAxisExpression = "gamma_f";
   state.bodePhaseExpression = "phase";
-  state.bodePhaseReverse = false;
   state.nyquistXLabel = "zprime";
   state.nyquistYLabel = "neg_zdoubleprime";
   state.bodeMagnitudeYLabel = "abs_z";
   savePreference("auto-drt-axis", state.drtAxis);
   savePreference("auto-drt-y-expression", state.drtYAxisExpression);
   savePreference("auto-bode-phase-expression", state.bodePhaseExpression);
-  savePreference("auto-bode-phase-reverse", "0");
   savePreference("auto-nyquist-x-label", state.nyquistXLabel);
   savePreference("auto-nyquist-y-label", state.nyquistYLabel);
   savePreference("auto-bode-mag-y-label", state.bodeMagnitudeYLabel);
@@ -1800,7 +1790,6 @@ function populateAxisExpressionOptions() {
   if (!options.length) {
     el.axisExpressionField.hidden = true;
     el.electrodeAreaField.hidden = true;
-    if (el.axisReverseYField) el.axisReverseYField.hidden = true;
     return;
   }
   options.forEach((option) => {
@@ -1815,9 +1804,6 @@ function populateAxisExpressionOptions() {
 
 function syncAxisExpressionDialogInputs() {
   const { chartKey, axis } = state.axisDialog;
-  const isBodePhaseY = chartKey === "bodePhase" && axis === "y";
-  if (el.axisReverseYField) el.axisReverseYField.hidden = !isBodePhaseY;
-  if (el.axisReverseYInput) el.axisReverseYInput.checked = state.bodePhaseReverse;
   const isEisArea = isEisImpedanceAxis(chartKey, axis) && parseEisAxisValue(el.axisExpressionSelect.value).unit === "area";
   const isDrtArea = chartKey === "drt" && axis === "y" && drtYAxisUsesArea(el.axisExpressionSelect.value);
   const selectedLabel = el.axisExpressionSelect.selectedOptions?.[0]?.textContent || "";
@@ -1913,8 +1899,6 @@ function applyAxisExpressionSettings(chartKey, axis) {
       state.bodePhaseExpression = value;
       savePreference("auto-bode-phase-expression", value);
     }
-    state.bodePhaseReverse = !!el.axisReverseYInput?.checked;
-    savePreference("auto-bode-phase-reverse", state.bodePhaseReverse ? "1" : "0");
   }
   return { ok: true, resetRanges: false };
 }
@@ -4334,7 +4318,7 @@ function drawEisOverlayCharts(chartOptions) {
     yLabel: phaseLabel(),
     xScale: "log",
     yScale: "linear",
-    reverseY: state.bodePhaseReverse,
+    reverseY: false,
     yDomain: phaseAutoDomain(phaseYValues)
   }));
 }
