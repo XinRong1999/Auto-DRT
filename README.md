@@ -15,7 +15,7 @@ Browser version
 This tool can run directly in a web browser.
 
 1. Download or clone this repository.
-2. Open index.html with a modern browser such as Chrome, Edge, or Safari.
+2. Open Start_Auto_DRT_Analyzer.html with a modern browser such as Chrome, Edge, or Safari.
 3. Import your EIS data and start the analysis.
 
 No Python environment or additional installation is required for the browser version.
