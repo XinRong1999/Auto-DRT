@@ -24,7 +24,7 @@ No Python environment or additional installation is required for the browser ver
 
 Auto DRT Analyzer can be used directly in a web browser by opening index.html.
 
-A packaged desktop app is currently provided for macOS. If the desktop app does not open, please run the browser version instead by opening index.html.
+A packaged desktop app is currently provided for macOS. If the desktop app does not open, please run the browser version instead by opening Start_Auto_DRT_Analyzer.html.
 
 ## Key Highlights
 
