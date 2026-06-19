@@ -1,3 +1,10 @@
+/*
+ * Auto DRT Analyzer
+ * Copyright (C) 2026 Xin Rong
+ * Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+ * See LICENSE.txt for the full license text.
+ */
+
 const TAU = Math.PI * 2;
 const SVG_NS = "http://www.w3.org/2000/svg";
 

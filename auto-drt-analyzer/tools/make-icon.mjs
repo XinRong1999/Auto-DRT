@@ -1,3 +1,10 @@
+/*
+ * Auto DRT Analyzer
+ * Copyright (C) 2026 Xin Rong
+ * Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+ * See LICENSE.txt for the full license text.
+ */
+
 import { deflateSync } from "node:zlib";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";

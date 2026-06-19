@@ -421,10 +421,10 @@ The current browser-based version does not bundle third-party JavaScript librari
 | Component | Purpose | Source / bundling | License status |
 | --- | --- | --- | --- |
 | Browser DOM, SVG, Canvas, Blob, File, localStorage APIs | UI, local file import, plotting, export, preferences | Native browser APIs | Browser/platform APIs; no bundled library license |
-| Custom JavaScript in `app.js` | EIS parsing, fitting, DRT calculation, plotting, export | Project source, bundled locally | Project license needs manual confirmation |
-| Custom CSS in `styles.css` | Application layout and visual styling | Project source, bundled locally | Project license needs manual confirmation |
-| Generated icon assets | macOS app icon | Generated from project icon script/assets | Project license needs manual confirmation |
-| `tools/make-icon.mjs` | Optional icon generation helper | Project source; not required to run the app | Project license needs manual confirmation |
+| Custom JavaScript in `app.js` | EIS parsing, fitting, DRT calculation, plotting, export | Project source, bundled locally | AGPL-3.0 |
+| Custom CSS in `styles.css` | Application layout and visual styling | Project source, bundled locally | AGPL-3.0 |
+| Generated icon assets | macOS app icon | Generated from project icon script/assets | AGPL-3.0 |
+| `tools/make-icon.mjs` | Optional icon generation helper | Project source; not required to run the app | AGPL-3.0 |
 
 No copied logos, paid fonts, external images, minified vendor files, or remote CDN dependencies were found during the current review. If future third-party libraries are added, their licenses should be listed here before release.
 
@@ -458,8 +458,23 @@ Confirm the electrode area in cm². If the area field is empty while an `Ω cm²
 
 Use the project selector to choose the current project before changing `Project preferences`, circuit settings, DRT point count, or peak settings.
 
-## License / Citation / Acknowledgement
+## Copyright and License
 
-License information has not been specified yet. Add the project license here when it is available.
+Copyright (C) 2026 Xin Rong.
 
-If you use Auto DRT Analyzer in academic work, please cite or acknowledge the software according to the release or repository guidance. When reporting results, include relevant analysis settings such as circuit model, lambda mode, frequency range, area normalization, and peak handling method.
+Auto DRT Analyzer is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See `LICENSE.txt` for the full license text.
+
+For citation and attribution, use `Xin Rong`. Abbreviated citation styles may use `X. Rong`.
+
+## Citation
+
+If you use Auto DRT Analyzer, please cite the GitHub repository for now:
+
+Xin Rong, Auto DRT Analyzer, version 1.0.0, GitHub repository: https://github.com/XinRong1999/Auto-DRT
+
+A Zenodo DOI will be added after the first release.
+
+## Disclaimer
+
+This software is provided as-is for academic and research use. Users are responsible for validating EIS fitting models, DRT parameters, input data, and interpretation before relying on the results in publications, reports, theses, or other scientific work.
+

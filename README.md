@@ -15,16 +15,19 @@ Browser version
 This tool can run directly in a web browser.
 
 1. Download or clone this repository.
-2. Open Start_Auto_DRT_Analyzer.html with a modern browser such as Chrome, Edge, or Safari.
+2. Open index.html with a modern browser such as Chrome, Edge, or Safari.
 3. Import your EIS data and start the analysis.
 
 No Python environment or additional installation is required for the browser version.
 
-## How to Run
+## Desktop version
 
-Auto DRT Analyzer can be used directly in a web browser by opening index.html.
+A packaged desktop application is currently available only for macOS.
 
-A packaged desktop app is currently provided for macOS. If the desktop app does not open, please run the browser version instead by opening Start_Auto_DRT_Analyzer.html.
+For macOS users, open Auto DRT Analyzer.app.
+If macOS blocks the app on the first launch, right-click the app and select Open.
+
+Windows and Linux desktop versions are not available at this stage. Users on these systems should use the browser version by opening index.html.
 
 ## Key Highlights
 
@@ -39,7 +42,7 @@ A packaged desktop app is currently provided for macOS. If the desktop app does 
 - Multi-project overlay comparison for EIS and DRT.
 - Independent project colors, markers, and legends.
 - Paper-ready PDF figure export.
-- Excel export including EIS data.
+- Excel export including EIS data, fitted data, DRT results, peaks, fitting parameters, and analysis settings.
 
 ## What Can You Use It For?
 
@@ -439,15 +442,31 @@ The current browser-based version does not bundle third-party JavaScript librari
 | Component | Purpose | Source / bundling | License status |
 | --- | --- | --- | --- |
 | Browser DOM, SVG, Canvas, Blob, File, localStorage APIs | UI, local file import, plotting, export, preferences | Native browser APIs | Browser/platform APIs; no bundled library license |
-| Custom JavaScript in `app.js` | EIS parsing, fitting, DRT calculation, plotting, export | Project source, bundled locally | Project license needs manual confirmation |
-| Custom CSS in `styles.css` | Application layout and visual styling | Project source, bundled locally | Project license needs manual confirmation |
-| Generated icon assets | macOS app icon | Generated from project icon script/assets | Project license needs manual confirmation |
-| `tools/make-icon.mjs` | Optional icon generation helper | Project source; not required to run the app | Project license needs manual confirmation |
+| Custom JavaScript in `app.js` | EIS parsing, fitting, DRT calculation, plotting, export | Project source, bundled locally | AGPL-3.0 |
+| Custom CSS in `styles.css` | Application layout and visual styling | Project source, bundled locally | AGPL-3.0 |
+| Generated icon assets | macOS app icon | Generated from project icon script/assets | AGPL-3.0 |
+| `tools/make-icon.mjs` | Optional icon generation helper | Project source; not required to run the app | AGPL-3.0 |
 
-This project was created by the author with assistance from Codex AI. All source code, interface elements, text, and visual assets are intended to be original. No copied logos, paid fonts, external images, minified vendor files, or remote CDN dependencies were intentionally included.
-
-Any similarity to third-party works is unintended. If a potential infringement issue is identified, please contact the author so that the relevant content can be reviewed and modified or removed promptly.
+No copied logos, paid fonts, external images, minified vendor files, or remote CDN dependencies were found during the current review. If future third-party libraries are added, their licenses should be listed here before release.
 
 ## Troubleshooting
 
+## Copyright and License
 
+Copyright (C) 2026 Xin Rong.
+
+Auto DRT Analyzer is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See `LICENSE.txt` for the full license text.
+
+For citation and attribution, use `Xin Rong`. Abbreviated citation styles may use `X. Rong`.
+
+## Citation
+
+If you use Auto DRT Analyzer, please cite the GitHub repository for now:
+
+Xin Rong, Auto DRT Analyzer, version 1.0.0, GitHub repository: https://github.com/XinRong1999/Auto-DRT
+
+A Zenodo DOI will be added after the first release.
+
+## Disclaimer
+
+This software is provided as-is for academic and research use. Users are responsible for validating EIS fitting models, DRT parameters, input data, and interpretation before relying on the results in publications, reports, theses, or other scientific work.
