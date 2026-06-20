@@ -7,6 +7,9 @@
 
 const TAU = Math.PI * 2;
 const SVG_NS = "http://www.w3.org/2000/svg";
+const DEFAULT_MANUAL_LAMBDA = "0.001";
+const MANUAL_LAMBDA_MIN = 1e-6;
+const MANUAL_LAMBDA_MAX = 1;
 
 const state = {
   datasets: [],
@@ -36,6 +39,7 @@ const state = {
   pointShape: getInitialPreference("auto-drt-point-shape", "circle", ["circle", "square", "triangle", "diamond", "cross"]),
   pointSize: getInitialNumber("auto-drt-point-size", 4, 2, 12),
   labelSize: getInitialNumber("auto-drt-label-size", 12, 8, 20),
+  lastValidManualLambda: DEFAULT_MANUAL_LAMBDA,
   dataColor: getInitialColor("auto-drt-data-color", ""),
   fitColor: getInitialColor("auto-drt-fit-color", ""),
   drtLineColor: getInitialColor("auto-drt-line-color", ""),
@@ -63,6 +67,8 @@ const el = {
   rsValueInput: document.getElementById("rsValueInput"),
   addDrtRegionBtn: document.getElementById("addDrtRegionBtn"),
   drtRegionList: document.getElementById("drtRegionList"),
+  calcFreqMinInput: document.getElementById("calcFreqMinInput"),
+  calcFreqMaxInput: document.getElementById("calcFreqMaxInput"),
   graphStyleSelect: document.getElementById("graphStyleSelect"),
   showDataInput: document.getElementById("showDataInput"),
   showFitInput: document.getElementById("showFitInput"),
@@ -270,7 +276,16 @@ const translations = {
     loadedProjects: "Loaded projects",
     deleteProject: "Delete",
     grid: "DRT points",
-    drtGridChanged: "DRT points changed. Recalculating selected project.",
+    drtGridChanged: "DRT points changed.",
+    parametersChanged: "Parameters changed. Please rerun analysis.",
+    updated: "Updated",
+    calcRangeHeading: "Calculation frequency range / Hz",
+    calcFreqMin: "Minimum frequency for calculation / Hz",
+    calcFreqMax: "Maximum frequency for calculation / Hz",
+    rangeHelp: "Calculation frequency range determines which EIS data points are used for DRT inversion.",
+    calcRangePositive: "Calculation frequency range must be positive.",
+    calcRangeOrder: "Minimum calculation frequency must be smaller than maximum calculation frequency.",
+    calcRangeTooFew: "Too few data points in the selected calculation frequency range.",
     drtRegionHeading: "DRT frequency regions",
     addRegion: "Add region",
     deleteRegion: "Delete",
@@ -279,10 +294,10 @@ const translations = {
     upperHz: "Upper Hz",
     drtAreaAnalysis: "DRT area analysis",
     drtArea: "Area",
-    lambda: "Lambda",
+    lambda: "λ",
     auto: "Auto",
     manual: "Manual",
-    manualLambda: "Manual lambda",
+    manualLambda: "Manual λ",
     tauPadding: "Tau padding",
     analysisMode: "Analysis mode",
     modeBalanced: "Balanced",
@@ -352,6 +367,7 @@ const translations = {
     invalidRange: "Enter a minimum smaller than the maximum.",
     positiveRange: "Log-scale axes need values greater than 0.",
     invalidArea: "Enter an electrode area greater than 0.",
+    invalidManualLambda: "Please enter a valid λ between 1e-6 and 1.",
     environmentReady: "Environment ready: no Python, pip, conda, or DRT package installation required.",
     environmentMissing: "Browser missing required local APIs",
     shapeCircle: "Circle",
@@ -370,7 +386,7 @@ const translations = {
     eisFittingQuality: "EIS fitting quality",
     points: "Points",
     frequency: "Frequency",
-    selectedLambda: "Selected lambda",
+    selectedLambda: "Selected λ",
     drtXAxisMode: "DRT x-axis mode",
     drtYAxisLabel: "DRT y-axis label",
     detectedPeakCount: "Detected peaks",
@@ -482,7 +498,16 @@ const translations = {
     loadedProjects: "読み込み済みプロジェクト",
     deleteProject: "削除",
     grid: "DRT点数",
-    drtGridChanged: "DRT点数を変更しました。選択中のプロジェクトを再計算しています。",
+    drtGridChanged: "DRT点数を変更しました。",
+    parametersChanged: "パラメータが変更されました。再解析してください。",
+    updated: "更新済み",
+    calcRangeHeading: "計算周波数範囲 / Hz",
+    calcFreqMin: "計算用最小周波数 / Hz",
+    calcFreqMax: "計算用最大周波数 / Hz",
+    rangeHelp: "計算周波数範囲はDRT反演に使うEISデータ点を決めます。",
+    calcRangePositive: "計算周波数範囲は正の値にしてください。",
+    calcRangeOrder: "計算用最小周波数は最大周波数より小さくしてください。",
+    calcRangeTooFew: "選択した計算周波数範囲のデータ点が少なすぎます。",
     drtRegionHeading: "DRT周波数領域",
     addRegion: "領域を追加",
     deleteRegion: "削除",
@@ -491,10 +516,10 @@ const translations = {
     upperHz: "上限 Hz",
     drtAreaAnalysis: "DRT面積解析",
     drtArea: "面積",
-    lambda: "ラムダ",
+    lambda: "λ",
     auto: "自動",
     manual: "手動",
-    manualLambda: "手動ラムダ",
+    manualLambda: "手動 λ",
     tauPadding: "タウ余白",
     analysisMode: "解析モード",
     modeBalanced: "バランス",
@@ -564,6 +589,7 @@ const translations = {
     invalidRange: "最小値は最大値より小さくしてください。",
     positiveRange: "対数軸では0より大きい値が必要です。",
     invalidArea: "0より大きい電極面積を入力してください。",
+    invalidManualLambda: "1e-6 から 1 の範囲で有効な λ を入力してください。",
     environmentReady: "環境は準備済み: Python、pip、conda、DRTパッケージのインストールは不要です。",
     environmentMissing: "ブラウザのローカルAPIが不足しています",
     shapeCircle: "丸",
@@ -582,7 +608,7 @@ const translations = {
     eisFittingQuality: "EISフィット品質",
     points: "点数",
     frequency: "周波数",
-    selectedLambda: "選択ラムダ",
+    selectedLambda: "選択された λ",
     drtXAxisMode: "DRT X軸モード",
     drtYAxisLabel: "DRT Y軸ラベル",
     detectedPeakCount: "検出ピーク数",
@@ -694,7 +720,16 @@ const translations = {
     loadedProjects: "已加载项目",
     deleteProject: "删除",
     grid: "DRT 点数",
-    drtGridChanged: "DRT 点数已改变，正在重新计算当前项目。",
+    drtGridChanged: "DRT 点数已改变。",
+    parametersChanged: "参数已修改，请重新分析",
+    updated: "已更新",
+    calcRangeHeading: "计算频率范围 / Hz",
+    calcFreqMin: "计算用最小频率 / Hz",
+    calcFreqMax: "计算用最大频率 / Hz",
+    rangeHelp: "计算频率范围决定哪些 EIS 数据参与 DRT 反演。",
+    calcRangePositive: "计算频率范围必须为正数。",
+    calcRangeOrder: "计算用最小频率必须小于最大频率。",
+    calcRangeTooFew: "所选计算频率范围内的数据点太少。",
     drtRegionHeading: "DRT 频率区域",
     addRegion: "添加区域",
     deleteRegion: "删除",
@@ -703,10 +738,10 @@ const translations = {
     upperHz: "高频 Hz",
     drtAreaAnalysis: "DRT 面积分析",
     drtArea: "面积",
-    lambda: "Lambda",
+    lambda: "λ",
     auto: "自动",
     manual: "手动",
-    manualLambda: "手动 lambda",
+    manualLambda: "手动 λ",
     tauPadding: "Tau 延展",
     analysisMode: "分析模式",
     modeBalanced: "平衡",
@@ -776,6 +811,7 @@ const translations = {
     invalidRange: "请输入小于最大值的最小值。",
     positiveRange: "对数坐标需要大于 0 的数值。",
     invalidArea: "请输入大于 0 的电极面积。",
+    invalidManualLambda: "请输入有效的 λ，范围为 1e-6 到 1。",
     environmentReady: "环境已就绪：不需要安装 Python、pip、conda 或 DRT 包。",
     environmentMissing: "浏览器缺少必要的本地 API",
     shapeCircle: "圆点",
@@ -794,7 +830,7 @@ const translations = {
     eisFittingQuality: "EIS 拟合质量",
     points: "点数",
     frequency: "频率",
-    selectedLambda: "选中的 lambda",
+    selectedLambda: "选中的 λ",
     drtXAxisMode: "DRT x 轴模式",
     drtYAxisLabel: "DRT y 轴标签",
     detectedPeakCount: "识别峰数量",
@@ -848,6 +884,10 @@ const uiBindings = [
   ["advancedSettingsSummary", "advancedSettings"],
   ["fileLabel", "file"],
   ["loadedProjectsLabel", "loadedProjects"],
+  ["calcRangeHeading", "calcRangeHeading"],
+  ["calcFreqMinLabel", "calcFreqMin"],
+  ["calcFreqMaxLabel", "calcFreqMax"],
+  ["rangeHelpText", "rangeHelp"],
   ["gridLabel", "grid"],
   ["lambdaLabel", "lambda"],
   ["analysisModeLabel", "analysisMode"],
@@ -964,9 +1004,19 @@ el.projectList.addEventListener("click", (event) => {
   const projectButton = event.target.closest?.("[data-select-project]");
   if (projectButton) setActiveIndex(Number(projectButton.dataset.selectProject));
 });
+el.gridSizeInput.addEventListener("input", markAnalysisParametersChanged);
 el.gridSizeInput.addEventListener("change", () => {
   updateDrtGridForActiveProject();
 });
+el.gridSizeInput.addEventListener("blur", () => {
+  updateDrtGridForActiveProject();
+});
+el.calcFreqMinInput?.addEventListener("input", markAnalysisParametersChanged);
+el.calcFreqMaxInput?.addEventListener("input", markAnalysisParametersChanged);
+el.calcFreqMinInput?.addEventListener("change", updateCalculationRangeForActiveProject);
+el.calcFreqMaxInput?.addEventListener("change", updateCalculationRangeForActiveProject);
+el.calcFreqMinInput?.addEventListener("blur", updateCalculationRangeForActiveProject);
+el.calcFreqMaxInput?.addEventListener("blur", updateCalculationRangeForActiveProject);
 el.addDrtRegionBtn.addEventListener("click", () => {
   addDrtRegion();
 });
@@ -979,12 +1029,24 @@ el.drtRegionList.addEventListener("click", (event) => {
 });
 el.lambdaModeSelect.addEventListener("change", () => {
   el.manualLambdaField.hidden = el.lambdaModeSelect.value !== "manual";
+  markAnalysisParametersChanged();
 });
-el.analysisModeSelect.addEventListener("change", redrawCharts);
+el.manualLambdaInput.addEventListener("input", () => {
+  const dataset = getActiveDataset();
+  if (dataset) dataset.manualLambdaRaw = el.manualLambdaInput.value;
+  markAnalysisParametersChanged();
+});
+el.manualLambdaInput.addEventListener("blur", () => {
+  readManualLambdaInput({ requireValid: true, restoreOnInvalid: true });
+});
+el.analysisModeSelect.addEventListener("change", markAnalysisParametersChanged);
+el.tauPaddingSelect.addEventListener("change", markAnalysisParametersChanged);
 el.fixRsInput.addEventListener("change", () => {
   el.rsValueField.hidden = !el.fixRsInput.checked;
+  markAnalysisParametersChanged();
 });
 el.rsValueInput.addEventListener("input", () => {
+  markAnalysisParametersChanged();
   if (state.result) renderFittingParameters(state.result);
 });
 el.refitBtn.addEventListener("click", () => {
@@ -1094,7 +1156,7 @@ el.languageButtons.forEach((button) => {
     applyLanguage(button.dataset.lang);
     if (state.result) {
       renderResult(state.result);
-      setStatus(`${getProjectName(state.result.dataset)} ${t("statusAnalyzed")}`);
+      setStatus(`${getProjectName(state.result.dataset)} ${t("updated")}`);
     } else {
       updateDatasetStatus();
       renderActiveProject();
@@ -1220,6 +1282,9 @@ function ensureProject(dataset, index = state.datasets.indexOf(dataset)) {
   dataset.graphSettings.labelSize = clamp(Number(dataset.graphSettings.labelSize) || 12, 8, 20);
   dataset.graphSettings.peakSensitivity = getAllowedPeakSensitivity(dataset.graphSettings.peakSensitivity);
   if (!Number.isFinite(Number(dataset.drtGridSize))) dataset.drtGridSize = Number(el.gridSizeInput?.value) || 80;
+  if (!Number.isFinite(Number(dataset.manualLambda))) dataset.manualLambda = Number(DEFAULT_MANUAL_LAMBDA);
+  if (typeof dataset.manualLambdaRaw !== "string" || !dataset.manualLambdaRaw.trim()) dataset.manualLambdaRaw = DEFAULT_MANUAL_LAMBDA;
+  if (!dataset.calculationFrequencyRange) dataset.calculationFrequencyRange = defaultCalculationFrequencyRange(dataset);
   return dataset;
 }
 
@@ -2284,7 +2349,8 @@ function refitEquivalentCircuit(result) {
     ...result.options,
     fixRs: el.fixRsInput.checked,
     fixedRs: Number(el.rsValueInput.value) || null,
-    peakSensitivity: state.peakSensitivity
+    peakSensitivity: state.peakSensitivity,
+    calculationFrequencyRange: readCalculationRangeInputs(dataset)
   };
   const circuitFit = fitEquivalentCircuit(dataset.points, getCircuitElements(dataset), options, {
     rInf: result.rInf,
@@ -2743,18 +2809,117 @@ function renderNoActiveResult() {
 
 function syncAnalysisControls(dataset = getActiveDataset()) {
   const gridSize = clamp(Number(dataset?.drtGridSize) || Number(dataset?.result?.options?.gridSize) || Number(el.gridSizeInput.value) || 80, 40, 140);
-  el.gridSizeInput.value = String(gridSize);
+  if (document.activeElement !== el.gridSizeInput) el.gridSizeInput.value = String(gridSize);
+  syncManualLambdaInput(dataset);
+  syncCalculationRangeInputs(dataset);
+}
+
+function datasetFrequencyBounds(dataset) {
+  const frequencies = (dataset?.points || []).map((point) => point.frequency).filter((value) => Number.isFinite(value) && value > 0);
+  if (!frequencies.length) return { min: NaN, max: NaN };
+  return { min: Math.min(...frequencies), max: Math.max(...frequencies) };
+}
+
+function defaultCalculationFrequencyRange(dataset) {
+  const bounds = datasetFrequencyBounds(dataset);
+  return {
+    min: Number.isFinite(bounds.min) ? String(bounds.min) : "",
+    max: Number.isFinite(bounds.max) ? String(bounds.max) : ""
+  };
+}
+
+function syncCalculationRangeInputs(dataset = getActiveDataset()) {
+  const hasDataset = !!dataset;
+  const bounds = datasetFrequencyBounds(dataset);
+  const range = dataset?.calculationFrequencyRange || defaultCalculationFrequencyRange(dataset);
+  const minValue = range.min !== "" && range.min != null ? range.min : (Number.isFinite(bounds.min) ? String(bounds.min) : "");
+  const maxValue = range.max !== "" && range.max != null ? range.max : (Number.isFinite(bounds.max) ? String(bounds.max) : "");
+  [el.calcFreqMinInput, el.calcFreqMaxInput].forEach((input) => {
+    if (input) input.disabled = !hasDataset;
+  });
+  if (el.calcFreqMinInput && document.activeElement !== el.calcFreqMinInput) el.calcFreqMinInput.value = minValue;
+  if (el.calcFreqMaxInput && document.activeElement !== el.calcFreqMaxInput) el.calcFreqMaxInput.value = maxValue;
+}
+
+function updateCalculationRangeForActiveProject() {
+  const dataset = getActiveDataset();
+  if (!dataset) return;
+  dataset.calculationFrequencyRange = {
+    min: el.calcFreqMinInput?.value || "",
+    max: el.calcFreqMaxInput?.value || ""
+  };
+  markAnalysisParametersChanged();
+}
+
+function markAnalysisParametersChanged() {
+  const dataset = getActiveDataset();
+  if (!dataset) return;
+  if (dataset.result) dataset.analysisOutdated = true;
+  setStatus(t("parametersChanged"));
+}
+
+function parseInputNumber(input) {
+  const raw = String(input?.value ?? "").trim();
+  if (!raw) return { raw, value: NaN, valid: false };
+  const value = Number(raw);
+  return { raw, value, valid: Number.isFinite(value) };
+}
+
+function validManualLambdaRaw(dataset = getActiveDataset()) {
+  const raw = typeof dataset?.manualLambdaRaw === "string" ? dataset.manualLambdaRaw.trim() : "";
+  const rawValue = Number(raw);
+  if (raw && Number.isFinite(rawValue) && rawValue >= MANUAL_LAMBDA_MIN && rawValue <= MANUAL_LAMBDA_MAX) return raw;
+  const storedValue = Number(dataset?.manualLambda);
+  if (Number.isFinite(storedValue) && storedValue >= MANUAL_LAMBDA_MIN && storedValue <= MANUAL_LAMBDA_MAX) return String(storedValue);
+  const lastValue = Number(state.lastValidManualLambda);
+  if (Number.isFinite(lastValue) && lastValue >= MANUAL_LAMBDA_MIN && lastValue <= MANUAL_LAMBDA_MAX) return state.lastValidManualLambda;
+  return DEFAULT_MANUAL_LAMBDA;
+}
+
+function syncManualLambdaInput(dataset = getActiveDataset()) {
+  if (!el.manualLambdaInput || document.activeElement === el.manualLambdaInput) return;
+  el.manualLambdaInput.value = validManualLambdaRaw(dataset);
+}
+
+function restoreManualLambdaInput(dataset = getActiveDataset()) {
+  const raw = validManualLambdaRaw(dataset);
+  if (dataset) dataset.manualLambdaRaw = raw;
+  if (el.manualLambdaInput) el.manualLambdaInput.value = raw;
+}
+
+function readManualLambdaInput({ requireValid = false, restoreOnInvalid = false } = {}) {
+  const dataset = getActiveDataset();
+  const parsed = parseInputNumber(el.manualLambdaInput);
+  const valid = parsed.valid && parsed.value >= MANUAL_LAMBDA_MIN && parsed.value <= MANUAL_LAMBDA_MAX;
+  if (valid) {
+    state.lastValidManualLambda = parsed.raw;
+    if (dataset) {
+      dataset.manualLambdaRaw = parsed.raw;
+      dataset.manualLambda = parsed.value;
+    }
+    return parsed.value;
+  }
+  if (requireValid) {
+    if (restoreOnInvalid) restoreManualLambdaInput(dataset);
+    setStatus(t("invalidManualLambda"));
+    if (el.runLog) el.runLog.textContent = t("invalidManualLambda");
+    return null;
+  }
+  const fallback = Number(dataset?.manualLambda ?? state.lastValidManualLambda ?? DEFAULT_MANUAL_LAMBDA);
+  return Number.isFinite(fallback) && fallback >= MANUAL_LAMBDA_MIN && fallback <= MANUAL_LAMBDA_MAX
+    ? fallback
+    : Number(DEFAULT_MANUAL_LAMBDA);
 }
 
 function updateDrtGridForActiveProject() {
   const dataset = getActiveDataset();
   if (!dataset) return;
-  const next = clamp(Number(el.gridSizeInput.value) || 80, 40, 140);
+  const parsed = parseInputNumber(el.gridSizeInput);
+  const fallback = clamp(Number(dataset.drtGridSize) || Number(dataset.result?.options?.gridSize) || 80, 40, 140);
+  const next = parsed.valid ? clamp(Math.round(parsed.value), 40, 140) : fallback;
   dataset.drtGridSize = next;
-  el.gridSizeInput.value = String(next);
-  if (!dataset.result) return;
-  setStatus(t("drtGridChanged"));
-  analyzeActiveDataset();
+  if (document.activeElement !== el.gridSizeInput || parsed.raw === "") el.gridSizeInput.value = String(next);
+  markAnalysisParametersChanged();
 }
 
 function analyzeActiveDataset() {
@@ -2765,18 +2930,25 @@ function analyzeActiveDataset() {
     el.runLog.textContent = t("enterRs");
     return;
   }
+  const lambdaMode = el.lambdaModeSelect.value;
+  const manualLambda = readManualLambdaInput({
+    requireValid: lambdaMode === "manual",
+    restoreOnInvalid: true
+  });
+  if (lambdaMode === "manual" && manualLambda === null) return;
 
   const options = {
-    gridSize: clamp(Number(el.gridSizeInput.value) || 80, 40, 140),
+    gridSize: clamp(Math.round(Number(el.gridSizeInput.value) || 80), 40, 140),
     tauPadding: Number(el.tauPaddingSelect.value) || 10,
-    lambdaMode: el.lambdaModeSelect.value,
-    manualLambda: Math.max(Number(el.manualLambdaInput.value) || 1e-3, 1e-12),
+    lambdaMode,
+    manualLambda,
     analysisMode: el.analysisModeSelect.value || "balanced",
     fixRs: el.fixRsInput.checked,
     fixedRs: Number(el.rsValueInput.value) || null,
-    peakSensitivity: state.peakSensitivity
+    peakSensitivity: state.peakSensitivity,
+    calculationFrequencyRange: readCalculationRangeInputs(dataset)
   };
-  el.gridSizeInput.value = String(options.gridSize);
+  if (document.activeElement !== el.gridSizeInput) el.gridSizeInput.value = String(options.gridSize);
   dataset.drtGridSize = options.gridSize;
   getActiveGraphSettings(dataset).peakSensitivity = options.peakSensitivity;
 
@@ -2794,7 +2966,8 @@ function analyzeActiveDataset() {
     state.result = result;
     renderResult(result);
     populateFileSelect();
-    setStatus(`${getProjectName(dataset)} ${t("statusAnalyzed")}`);
+    dataset.analysisOutdated = false;
+    setStatus(`${getProjectName(dataset)} ${t("updated")}`);
   } catch (error) {
     dataset.fittingStatus = "failed";
     console.error("Analysis failed:", error);
@@ -2825,7 +2998,7 @@ function analysisErrorReport(error, dataset, options = {}) {
     `Area normalization: ${areaEnabled ? "Yes" : "No"}`,
     `Electrode area / cm2: ${areaEnabled ? getEffectiveElectrodeArea(dataset) : ""}`,
     `Circuit model: ${circuitText(getCircuitElements(dataset))}`,
-    `Lambda mode: ${options.lambdaMode || "-"}`
+    `λ mode: ${options.lambdaMode || "-"}`
   ].join("\n");
 }
 
@@ -3071,6 +3244,9 @@ function parseEisText(text, name) {
     electrodeAreaSource: "default",
     graphSettings: defaultProjectGraphSettings(state.datasets.length),
     drtGridSize: 80,
+    manualLambdaRaw: DEFAULT_MANUAL_LAMBDA,
+    manualLambda: Number(DEFAULT_MANUAL_LAMBDA),
+    calculationFrequencyRange: null,
     result: null,
     calculatedDrtData: null,
     detectedPeaks: [],
@@ -3124,28 +3300,65 @@ function getColumn(values, finiteIndices, preferredIndex, fallbackPosition) {
   return finiteIndices[fallbackPosition]?.value ?? NaN;
 }
 
+function readCalculationRangeInputs(dataset = getActiveDataset()) {
+  const fallback = defaultCalculationFrequencyRange(dataset);
+  const minRaw = String(el.calcFreqMinInput?.value ?? "").trim();
+  const maxRaw = String(el.calcFreqMaxInput?.value ?? "").trim();
+  return {
+    min: minRaw !== "" ? minRaw : fallback.min,
+    max: maxRaw !== "" ? maxRaw : fallback.max
+  };
+}
+
+function resolveCalculationFrequencyRange(dataset, options = {}) {
+  const points = dataset.points || [];
+  const bounds = datasetFrequencyBounds(dataset);
+  const requested = options.calculationFrequencyRange || dataset.calculationFrequencyRange || defaultCalculationFrequencyRange(dataset);
+  const requestedMin = Number(requested.min !== "" && requested.min != null ? requested.min : bounds.min);
+  const requestedMax = Number(requested.max !== "" && requested.max != null ? requested.max : bounds.max);
+  if (!(requestedMin > 0) || !(requestedMax > 0)) throw new Error(t("calcRangePositive"));
+  if (requestedMin >= requestedMax) throw new Error(t("calcRangeOrder"));
+  const filtered = points.filter((point) => point.frequency >= requestedMin && point.frequency <= requestedMax);
+  if (filtered.length < 5) throw new Error(t("calcRangeTooFew"));
+  const selectedFrequencies = filtered.map((point) => point.frequency);
+  const effectiveMin = Math.min(...selectedFrequencies);
+  const effectiveMax = Math.max(...selectedFrequencies);
+  return {
+    min: requestedMin,
+    max: requestedMax,
+    effectiveMin,
+    effectiveMax,
+    points: filtered,
+    pointCount: filtered.length,
+    originalPointCount: points.length
+  };
+}
+
 function runDrtAnalysis(dataset, options) {
   const points = dataset.points;
-  const frequencies = points.map((point) => point.frequency);
+  const calculationRange = resolveCalculationFrequencyRange(dataset, options);
+  const drtPoints = calculationRange.points;
+  const frequencies = drtPoints.map((point) => point.frequency);
   const zReal = points.map((point) => point.zReal);
   const zNegImag = points.map((point) => point.zNegImag);
-  const fMin = Math.min(...frequencies);
-  const fMax = Math.max(...frequencies);
+  const fMin = calculationRange.effectiveMin;
+  const fMax = calculationRange.effectiveMax;
   const tauMin = 1 / (TAU * fMax * options.tauPadding);
   const tauMax = options.tauPadding / (TAU * fMin);
   const observableTauMin = 1 / (TAU * fMax);
   const observableTauMax = 1 / (TAU * fMin);
   const tauGrid = logspace(Math.log10(tauMin), Math.log10(tauMax), options.gridSize);
   const deltaLogTau = (Math.log(tauMax) - Math.log(tauMin)) / Math.max(options.gridSize - 1, 1);
-  const rInf = options.fixRs && Number.isFinite(options.fixedRs) ? options.fixedRs : estimateRinf(points);
+  const rInf = options.fixRs && Number.isFinite(options.fixedRs) ? options.fixedRs : estimateRinf(drtPoints);
 
-  const system = buildSystem(points, tauGrid, deltaLogTau, rInf);
+  const system = buildSystem(drtPoints, tauGrid, deltaLogTau, rInf);
   const regularizer = buildSecondDifferencePenalty(options.gridSize);
   const scan = options.lambdaMode === "manual"
     ? [{ lambda: options.manualLambda, solution: solveRegularized(system, regularizer, options.manualLambda) }]
     : scanLambda(system, regularizer);
   const selected = options.lambdaMode === "manual" ? scan[0] : selectLambdaByAnalysisMode(scan, options.analysisMode);
-  let gamma = selected.solution.gamma.map((value) => Math.max(0, value));
+  const solverInfo = drtSolverInfo(selected.solution);
+  let gamma = selected.solution.gamma.map((value) => Math.max(0, Number.isFinite(value) ? value : 0));
   gamma = smoothSmallNegatives(gamma);
 
   const autoPeaks = detectPeaks(tauGrid, gamma, deltaLogTau, {
@@ -3187,10 +3400,19 @@ function runDrtAnalysis(dataset, options) {
     options,
     tauGrid,
     observableTauRange: [observableTauMin, observableTauMax],
+    calculationFrequencyRange: {
+      min: calculationRange.min,
+      max: calculationRange.max,
+      effectiveMin: calculationRange.effectiveMin,
+      effectiveMax: calculationRange.effectiveMax,
+      pointCount: calculationRange.pointCount,
+      originalPointCount: calculationRange.originalPointCount
+    },
     gamma,
     deltaLogTau,
     rInf,
     lambda: selected.lambda,
+    solverInfo,
     fitted,
     drtFitted,
     circuitFit,
@@ -3272,6 +3494,20 @@ function scanLambda(system, regularizer) {
 }
 
 function solveRegularized(system, regularizer, lambda) {
+  try {
+    return solveNonNegativeRegularized(system, regularizer, lambda);
+  } catch (error) {
+    const fallback = solveUnconstrainedRegularized(system, regularizer, lambda, true);
+    return {
+      ...fallback,
+      solver: "unconstrained-clipped-fallback",
+      constrained: false,
+      fallbackReason: error?.message || String(error)
+    };
+  }
+}
+
+function buildRegularizedNormalMatrix(system, regularizer, lambda) {
   const n = system.aty.length;
   const matrix = makeMatrix(n, n, 0);
   for (let i = 0; i < n; i += 1) {
@@ -3280,10 +3516,171 @@ function solveRegularized(system, regularizer, lambda) {
     }
     matrix[i][i] += 1e-12;
   }
-  const gamma = solveLinearSystem(matrix, [...system.aty]);
+  return matrix;
+}
+
+function solveUnconstrainedRegularized(system, regularizer, lambda, clipNegative = false) {
+  const matrix = buildRegularizedNormalMatrix(system, regularizer, lambda);
+  const solveMatrix = matrix.map((row) => [...row]);
+  const gamma = solveLinearSystem(solveMatrix, [...system.aty])
+    .map((value) => Number.isFinite(value) ? value : 0)
+    .map((value) => clipNegative ? Math.max(0, value) : value);
+  return {
+    gamma,
+    ...solutionStats(system, gamma),
+    solver: clipNegative ? "unconstrained-clipped" : "unconstrained",
+    constrained: false,
+    iterations: 1,
+    converged: true,
+    relativeChange: 0,
+    objectiveChange: 0,
+    finalObjective: regularizedFullObjective(system, regularizer, lambda, gamma),
+    tolerance: NaN,
+    maxIterations: 1
+  };
+}
+
+function solveNonNegativeRegularized(system, regularizer, lambda) {
+  const matrix = buildRegularizedNormalMatrix(system, regularizer, lambda);
+  const lipschitz = estimateLargestEigenvalue(matrix);
+  if (!(lipschitz > 0)) throw new Error("Invalid DRT solver step size.");
+  const step = 1 / lipschitz;
+  const unconstrained = solveLinearSystem(matrix.map((row) => [...row]), [...system.aty])
+    .map((value) => Number.isFinite(value) ? value : 0);
+  let x = unconstrained.map((value) => Math.max(0, value));
+  if (x.every((value) => value <= 0)) {
+    x = system.aty.map((value, index) => Math.max(0, value / Math.max(matrix[index][index], 1e-12)));
+  }
+  let y = [...x];
+  let tValue = 1;
+  let previousObjective = regularizedObjective(matrix, system.aty, x);
+  let previousFullObjective = regularizedFullObjective(system, regularizer, lambda, x);
+  const maxIterations = 320;
+  const tolerance = 1e-7;
+  let iterations = 0;
+  let converged = false;
+  let lastRelativeChange = Infinity;
+  let lastObjectiveChange = Infinity;
+
+  for (let iteration = 1; iteration <= maxIterations; iteration += 1) {
+    iterations = iteration;
+    const gradient = matVec(matrix, y).map((value, index) => value - system.aty[index]);
+    let nextX = y.map((value, index) => Math.max(0, value - step * gradient[index]));
+    let objective = regularizedObjective(matrix, system.aty, nextX);
+    const startingObjective = previousObjective;
+
+    if (!Number.isFinite(objective) || objective > previousObjective * (1 + 1e-8)) {
+      const restartGradient = matVec(matrix, x).map((value, index) => value - system.aty[index]);
+      nextX = x.map((value, index) => Math.max(0, value - step * restartGradient[index]));
+      objective = regularizedObjective(matrix, system.aty, nextX);
+      y = [...x];
+      tValue = 1;
+    }
+    if (!Number.isFinite(objective)) throw new Error("Non-negative DRT solver diverged.");
+
+    const fullObjective = regularizedFullObjective(system, regularizer, lambda, nextX);
+    const change = vectorNorm(nextX.map((value, index) => value - x[index])) / Math.max(vectorNorm(x), 1);
+    const objectiveChange = Math.abs(previousFullObjective - fullObjective) / Math.max(Math.abs(previousFullObjective), 1);
+    lastRelativeChange = change;
+    lastObjectiveChange = objectiveChange;
+    const nextT = (1 + Math.sqrt(1 + 4 * tValue * tValue)) / 2;
+    const momentum = (tValue - 1) / nextT;
+    y = nextX.map((value, index) => value + momentum * (value - x[index]));
+    x = nextX;
+    tValue = nextT;
+    previousObjective = objective;
+    previousFullObjective = fullObjective;
+    if (change < tolerance || objectiveChange < tolerance * 0.1) {
+      converged = true;
+      break;
+    }
+  }
+
+  const gamma = x.map((value) => Math.max(0, Number.isFinite(value) ? value : 0));
+  return {
+    gamma,
+    ...solutionStats(system, gamma),
+    solver: "nonnegative-projected",
+    constrained: true,
+    iterations,
+    converged,
+    relativeChange: lastRelativeChange,
+    objectiveChange: lastObjectiveChange,
+    finalObjective: previousFullObjective,
+    tolerance,
+    maxIterations
+  };
+}
+
+function solutionStats(system, gamma) {
   const residualNorm = vectorNorm(matVec(system.rows, gamma).map((value, index) => value - system.y[index]));
   const roughnessNorm = roughness(gamma);
-  return { gamma, residualNorm, roughnessNorm };
+  return { residualNorm, roughnessNorm };
+}
+
+function regularizedObjective(matrix, rhs, vector) {
+  const hVector = matVec(matrix, vector);
+  let quadratic = 0;
+  let linear = 0;
+  for (let i = 0; i < vector.length; i += 1) {
+    quadratic += vector[i] * hVector[i];
+    linear += rhs[i] * vector[i];
+  }
+  return 0.5 * quadratic - linear;
+}
+
+function regularizedFullObjective(system, regularizer, lambda, vector) {
+  const residual = matVec(system.rows, vector).map((value, index) => value - system.y[index]);
+  const penaltyVector = matVec(regularizer, vector);
+  return 0.5 * dot(residual, residual) + 0.5 * lambda * dot(vector, penaltyVector);
+}
+
+function estimateLargestEigenvalue(matrix) {
+  const n = matrix.length;
+  if (!n) return 1;
+  let vector = Array(n).fill(1 / Math.sqrt(n));
+  let eigenvalue = 1;
+  for (let iteration = 0; iteration < 32; iteration += 1) {
+    const next = matVec(matrix, vector);
+    const norm = vectorNorm(next);
+    if (!(norm > 0)) return Math.max(eigenvalue, 1e-12);
+    vector = next.map((value) => value / norm);
+    const rayleigh = dot(vector, matVec(matrix, vector));
+    if (Number.isFinite(rayleigh) && rayleigh > 0) eigenvalue = rayleigh;
+  }
+  return Math.max(eigenvalue, 1e-12);
+}
+
+function dot(a, b) {
+  return a.reduce((sum, value, index) => sum + value * b[index], 0);
+}
+
+function drtSolverInfo(solution = {}) {
+  return {
+    solver: solution.solver || "unknown",
+    label: drtSolverLabel(solution),
+    constrained: solution.constrained === true,
+    iterations: Number(solution.iterations) || 0,
+    converged: solution.converged === true,
+    relativeChange: Number.isFinite(solution.relativeChange) ? solution.relativeChange : NaN,
+    objectiveChange: Number.isFinite(solution.objectiveChange) ? solution.objectiveChange : NaN,
+    finalObjective: Number.isFinite(solution.finalObjective) ? solution.finalObjective : NaN,
+    tolerance: Number.isFinite(solution.tolerance) ? solution.tolerance : NaN,
+    maxIterations: Number(solution.maxIterations) || 0,
+    fallbackReason: solution.fallbackReason || ""
+  };
+}
+
+function drtSolverLabel(solution = {}) {
+  if (solution.solver === "nonnegative-projected") {
+    return `Non-negative regularized solver (${Number(solution.iterations) || 0} iterations)`;
+  }
+  if (solution.solver === "unconstrained-clipped-fallback") {
+    return "Fallback clipped unconstrained solver";
+  }
+  if (solution.solver === "unconstrained-clipped") return "Clipped unconstrained solver";
+  if (solution.solver === "unconstrained") return "Unconstrained regularized solver";
+  return solution.solver || "Unknown solver";
 }
 
 function selectLambdaByLCurve(scan) {
@@ -3742,13 +4139,13 @@ function renderResult(result) {
 }
 
 function renderDrtSummary(result) {
-  const dataset = result.dataset;
-  const fMin = Math.min(...dataset.points.map((point) => point.frequency));
-  const fMax = Math.max(...dataset.points.map((point) => point.frequency));
-  el.summaryPoints.textContent = String(dataset.points.length);
+  const calcRange = result.calculationFrequencyRange || {};
+  const fMin = Number.isFinite(calcRange.min) ? calcRange.min : Math.min(...result.dataset.points.map((point) => point.frequency));
+  const fMax = Number.isFinite(calcRange.max) ? calcRange.max : Math.max(...result.dataset.points.map((point) => point.frequency));
+  el.summaryPoints.textContent = String(result.tauGrid?.length || result.options?.gridSize || 0);
   el.summaryFreq.textContent = `${formatNumber(fMin)}-${formatNumber(fMax)} Hz`;
   el.summaryLambda.textContent = formatNumber(result.lambda);
-  el.summaryPeaks.textContent = String(result.peaks.length);
+  el.summaryPeaks.textContent = String(displayedDrtPeaks(result).length);
   el.summaryDrtAxis.textContent = drtXAxisLabel();
   el.summaryDrtYLabel.textContent = drtYLabel();
 }
@@ -3774,10 +4171,10 @@ function setFigureSaveEnabled(enabled) {
 
 function renderPeaks(peaks) {
   const rows = peaks
-    ? [{ result: state.result, peaks }]
-    : analyzedResults().map((result) => ({ result, peaks: result.peaks || [] }));
+    ? [{ result: state.result, peaks: displayedDrtPeaks(state.result, peaks) }]
+    : analyzedResults().map((result) => ({ result, peaks: displayedDrtPeaks(result) }));
   const flattened = rows.flatMap(({ result, peaks: projectPeaks }) =>
-    projectPeaks.map((peak, index) => ({ result, peak, index }))
+    projectPeaks.map((peak) => ({ result, peak, index: result.peaks?.indexOf(peak) ?? 0 }))
   );
   if (!flattened.length) {
     // Avoid recursive redraw when a project has no detected or manual peaks.
@@ -3866,7 +4263,12 @@ function integrateDrtRegion(result, region) {
       f: tauToFrequency(tau),
       gamma: result.gamma[index] * drtDisplayScale(result.dataset)
     }))
-    .filter((item) => Number.isFinite(item.f) && item.f > 0 && Number.isFinite(item.gamma))
+    .filter((item) =>
+      Number.isFinite(item.f) &&
+      item.f > 0 &&
+      Number.isFinite(item.gamma) &&
+      isInDrtOutputRange(result, item.f)
+    )
     .sort((a, b) => a.f - b.f);
   if (data.length < 2) return NaN;
   let lower = normalizeRegionBound(region.lowerHz, data[0].f);
@@ -4128,15 +4530,46 @@ function buildEisDisplaySeries(result) {
   };
 }
 
+function drtOutputFrequencyBounds(result) {
+  const range = result?.calculationFrequencyRange || {};
+  const min = Number.isFinite(range.min) ? range.min : range.effectiveMin;
+  const max = Number.isFinite(range.max) ? range.max : range.effectiveMax;
+  return {
+    min: Number.isFinite(min) && min > 0 ? min : 0,
+    max: Number.isFinite(max) && max > 0 ? max : Infinity
+  };
+}
+
+function isInDrtOutputRange(result, frequency) {
+  const bounds = drtOutputFrequencyBounds(result);
+  return Number.isFinite(frequency) && frequency >= bounds.min && frequency <= bounds.max;
+}
+
+function displayedDrtPeaks(result, peaks = result?.peaks || []) {
+  return (peaks || []).filter((peak) => isInDrtOutputRange(result, peak.frequency));
+}
+
 function buildDrtDisplaySeries(result) {
   const dataset = result?.dataset;
   if (!dataset) return null;
   const drtUsesFrequency = drtXAxisMode() === "frequency";
   const drtScale = drtDisplayScale(dataset);
   const points = (result.tauGrid || [])
-    .map((tau, index) => [
-      drtUsesFrequency ? tauToFrequency(tau) : tau,
-      (result.gamma?.[index] || 0) * drtScale
+    .map((tau, index) => {
+      const frequency = tauToFrequency(tau);
+      return {
+        frequency,
+        tau,
+        gamma: (result.gamma?.[index] || 0) * drtScale
+      };
+    })
+    .filter((point) =>
+      isInDrtOutputRange(result, point.frequency) &&
+      Number.isFinite(point.gamma)
+    )
+    .map((point) => [
+      drtUsesFrequency ? point.frequency : point.tau,
+      point.gamma
     ])
     .filter((point) => Number.isFinite(point[0]) && Number.isFinite(point[1]))
     .sort((a, b) => a[0] - b[0]);
@@ -4363,7 +4796,7 @@ function drawDrtOverlayChart() {
     }
     if (settings.showPeaks === true) {
       const drtUsesFrequency = drtXAxisMode() === "frequency";
-      result.peaks.forEach((peak, peakIndex) => {
+      displayedDrtPeaks(result).forEach((peak, peakIndex) => {
         const x = drtUsesFrequency ? peak.frequency : peak.tau;
         domainValues.push(x);
         series.push({
@@ -4425,18 +4858,26 @@ function renderLog(result) {
     `${t("inputImaginary")}: ${result.dataset.inputImaginaryColumn}`,
     `${t("points")}: ${result.dataset.points.length}`,
     `${t("tauGrid")}: ${result.tauGrid.length} nodes, ${formatNumber(Math.min(...result.tauGrid))} to ${formatNumber(Math.max(...result.tauGrid))} s`,
+    `DRT solver: ${result.solverInfo?.label || "Unknown solver"}`,
+    `DRT solver converged: ${result.solverInfo?.converged ? t("yes") : "No"}`,
+    `DRT solver relative change: ${formatNumber(result.solverInfo?.relativeChange)}`,
+    `DRT solver objective change: ${formatNumber(result.solverInfo?.objectiveChange)}`,
+    `DRT solver final objective: ${formatNumber(result.solverInfo?.finalObjective)}`,
+    ...(result.solverInfo?.fallbackReason ? [`DRT solver fallback reason: ${result.solverInfo.fallbackReason}`] : []),
+    `Calculation frequency range: ${formatNumber(result.calculationFrequencyRange?.min)} to ${formatNumber(result.calculationFrequencyRange?.max)} Hz (${result.calculationFrequencyRange?.pointCount || 0}/${result.calculationFrequencyRange?.originalPointCount || result.dataset.points.length} points)`,
+    `Effective DRT frequency range: ${formatNumber(result.calculationFrequencyRange?.effectiveMin)} to ${formatNumber(result.calculationFrequencyRange?.effectiveMax)} Hz`,
     `${t("observableTauWindow")}: ${formatNumber(result.observableTauRange[0])} to ${formatNumber(result.observableTauRange[1])} s`,
     `${t("rinfEstimate")}: ${formatNumber(result.rInf)} ohm`,
     `${t("lambda")}: ${formatNumber(result.lambda)} (${t(result.options.lambdaMode === "manual" ? "manual" : "auto")}, ${t("analysisMode")}: ${result.options.analysisMode || "balanced"})`,
     `Rohm / Rs: ${result.options.fixRs ? t("fixed") : t("free")}`,
-    "Lambda note: Fit priority increases residual-fit emphasis, DRT smooth increases smoothness emphasis, Balanced keeps the L-curve choice.",
+    "λ note: Fit priority increases residual-fit emphasis, DRT smooth increases smoothness emphasis, Balanced keeps the L-curve choice.",
     `RMSE: ${formatNumber(result.rmse)} ohm`,
     `${t("normalizedRmse")}: ${formatPercent(result.normalizedRmse)}`,
     "",
     `${t("detectedPeaks")}:`,
     ...(
-      result.peaks.length
-        ? result.peaks.map((peak, index) =>
+      displayedDrtPeaks(result).length
+        ? displayedDrtPeaks(result).map((peak, index) =>
             `${projectName} ${index + 1}. ${peak.name || defaultPeakName(peak, index)} [${peak.source || "Auto"}], tau=${formatNumber(peak.tau)} s, f=${formatNumber(peak.frequency)} Hz, gamma=${formatNumber(peak.gamma * drtScale)} ${drtUnit}, R=${formatNumber(peak.resistance * drtScale)} ${drtUnit}, ${translatePeak(peak)}`
           )
         : [t("none")]
@@ -4461,6 +4902,7 @@ function drawChartMessage(svg, message) {
 
 function drawLineChart(svg, series, options) {
   clearSvg(svg);
+  drawLineChart.clipCounter = (drawLineChart.clipCounter || 0) + 1;
   const width = Number(options.width) || 720;
   const height = Number(options.height) || 420;
   const margin = { left: 64, right: 24, top: 22, bottom: 56, ...(options.margin || {}) };
@@ -4504,13 +4946,27 @@ function drawLineChart(svg, series, options) {
   }
   drawAxes(svg, xDomain, yDomain, xMap, yMap, options, margin, plotWidth, plotHeight, height);
 
+  const clipId = `plot-clip-${(options.chartKey || "chart").replace(/[^a-z0-9_-]/gi, "-")}-${drawLineChart.clipCounter}`;
+  const defs = svgEl("defs");
+  const clipPath = svgEl("clipPath", { id: clipId });
+  clipPath.appendChild(svgEl("rect", {
+    x: margin.left,
+    y: margin.top,
+    width: plotWidth,
+    height: plotHeight
+  }));
+  defs.appendChild(clipPath);
+  svg.appendChild(defs);
+  const seriesLayer = svgEl("g", { "clip-path": `url(#${clipId})` });
+  svg.appendChild(seriesLayer);
+
   for (const item of series) {
     const filtered = item.points.filter((point) => point[0] > 0 || options.xScale !== "log");
     if (item.line && filtered.length > 1) {
       const pathData = filtered
         .map((point, index) => `${index === 0 ? "M" : "L"} ${xMap(point[0]).toFixed(2)} ${yMap(point[1]).toFixed(2)}`)
         .join(" ");
-      svg.appendChild(svgEl("path", {
+      seriesLayer.appendChild(svgEl("path", {
         d: pathData,
         stroke: item.color,
         class: "series-line",
@@ -4519,7 +4975,7 @@ function drawLineChart(svg, series, options) {
     }
     if (item.point) {
       filtered.forEach((point) => {
-        drawPoint(svg, xMap(point[0]), yMap(point[1]), {
+        drawPoint(seriesLayer, xMap(point[0]), yMap(point[1]), {
           radius: item.points.length === 1 ? (item.pointRadius ?? options.peakRadius ?? 5) : (item.pointRadius ?? options.pointRadius ?? 3.4),
           color: item.color,
           shape: item.shape || options.pointShape || "circle"
@@ -4948,15 +5404,51 @@ function formatScientific(value, digits = 1) {
 }
 
 function drtXyExportRows(results = analyzedResults()) {
-  const rows = [["Project name", "X label", "X value", "Y label", "Y value"]];
+  const rows = [["Project name", "X label", "X value", "Y label", "Y value", "calculation_f_min_Hz", "calculation_f_max_Hz"]];
   results.forEach((result) => {
     const display = buildDrtDisplaySeries(result);
     if (!display || display.settings.showDrt === false) return;
+    const calcRange = result.calculationFrequencyRange || {};
     display.curve.forEach(([xValue, yValue]) => {
-      rows.push([display.projectName, display.xLabel, xValue, display.yLabel, yValue]);
+      rows.push([display.projectName, display.xLabel, xValue, display.yLabel, yValue, calcRange.min ?? "", calcRange.max ?? ""]);
     });
   });
   return rows;
+}
+
+function drtAnalysisInfoRows(results = analyzedResults()) {
+  const rows = [["Project name", "Original file name", "DRT solver", "nonnegative_constraint", "solver_converged", "solver_iterations", "solver_relative_change", "solver_objective_change", "solver_final_objective", "calculation_f_min_Hz", "calculation_f_max_Hz", "calculation_effective_f_min_Hz", "calculation_effective_f_max_Hz", "calculation_points", "original_points"]];
+  results.forEach((result) => {
+    const calcRange = result.calculationFrequencyRange || {};
+    rows.push([
+      getProjectName(result.dataset),
+      result.dataset?.originalName || result.dataset?.name || "",
+      result.solverInfo?.label || "",
+      result.solverInfo?.constrained ? "Yes" : "No",
+      result.solverInfo?.converged ? "Yes" : "No",
+      result.solverInfo?.iterations ?? "",
+      result.solverInfo?.relativeChange ?? "",
+      result.solverInfo?.objectiveChange ?? "",
+      result.solverInfo?.finalObjective ?? "",
+      calcRange.min ?? "",
+      calcRange.max ?? "",
+      calcRange.effectiveMin ?? "",
+      calcRange.effectiveMax ?? "",
+      calcRange.pointCount ?? "",
+      calcRange.originalPointCount ?? ""
+    ]);
+  });
+  return rows;
+}
+
+function calculationRangeTag(result) {
+  const range = result?.calculationFrequencyRange;
+  if (!range || !Number.isFinite(range.min) || !Number.isFinite(range.max)) return "calc_full_range";
+  return `calc_${formatRangeFileNumber(range.min)}_to_${formatRangeFileNumber(range.max)}Hz`;
+}
+
+function formatRangeFileNumber(value) {
+  return formatScientific(value).replace(/\./g, "p").replace(/\+/g, "");
 }
 
 function fitXyExportRows(results = analyzedResults()) {
@@ -4985,10 +5477,11 @@ function exportDrtExcel() {
     return;
   }
   const workbook = makeXlsxBlob([
-    { name: "DRT_XY_Data", rows }
+    { name: "DRT_XY_Data", rows },
+    { name: "Analysis_info", rows: drtAnalysisInfoRows(results) }
   ]);
   const filename = results.length === 1
-    ? `${safeFileBase(getProjectName(results[0].dataset))}_DRT_XY_Data.xlsx`
+    ? `${safeFileBase(getProjectName(results[0].dataset))}_${calculationRangeTag(results[0])}_DRT_XY_Data.xlsx`
     : "DRT_Compare_XY_Data.xlsx";
   downloadBlob(workbook, filename);
   setStatus(t("exportedDrtData"));

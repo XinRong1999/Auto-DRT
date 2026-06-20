@@ -1,0 +1,5 @@
+file,model,expected_tau_s,expected_frequency_Hz,expected_resistance_ohm,notes
+rs_r1c1_single_arc.csv,Rs + (R1 || C1),2.0000000000e-03,7.9577471546e+01,2.0000000000e-01,ideal/noiseless reference
+rs_two_rc_two_arcs.csv,Rs + (R1 || C1) + (R2 || C2),2.4000000000e-04,6.6314559622e+02,1.2000000000e-01,ideal/noiseless reference
+rs_two_rc_two_arcs.csv,Rs + (R1 || C1) + (R2 || C2),5.6000000000e-02,2.8420525552e+00,2.8000000000e-01,ideal/noiseless reference
+rs_r1cpe1_depressed_arc.csv,Rs + (R1 || CPE1),1.6077013393e-03,9.8995341489e+01,2.5000000000e-01,ideal/noiseless reference
