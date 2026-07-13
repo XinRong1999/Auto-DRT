@@ -43,12 +43,15 @@ const state = {
   dataColor: getInitialColor("auto-drt-data-color", ""),
   fitColor: getInitialColor("auto-drt-fit-color", ""),
   drtLineColor: getInitialColor("auto-drt-line-color", ""),
-  pointColor: getInitialColor("auto-drt-point-color", "")
+  pointColor: getInitialColor("auto-drt-point-color", ""),
+  resizeFrame: 0,
+  chartResizeObserver: null
 };
 
 const el = {
   html: document.documentElement,
   body: document.body,
+  startupWarning: document.getElementById("startupWarning"),
   fileInput: document.getElementById("fileInput"),
   sampleBtn: document.getElementById("sampleBtn"),
   openFileLabel: document.getElementById("openFileLabel"),
@@ -404,6 +407,7 @@ const translations = {
     noRun: "No run yet.",
     loadDataset: "Load a dataset",
     noSeries: "Select project or fit",
+    zipLaunchWarning: "This file appears to be running from a Windows temporary ZIP folder. Please extract the archive first, then start Auto DRT Analyzer from the extracted folder.",
     data: "Data",
     fit: "Fit",
     statusAnalyzed: "analyzed",
@@ -626,6 +630,7 @@ const translations = {
     noRun: "まだ実行していません。",
     loadDataset: "データセットを読み込んでください",
     noSeries: "プロジェクトまたはフィットを選択",
+    zipLaunchWarning: "Windows の一時 ZIP フォルダーから起動している可能性があります。先に ZIP を展開し、展開後のフォルダーから Auto DRT Analyzer を起動してください。",
     data: "データ",
     fit: "フィット",
     statusAnalyzed: "を解析しました",
@@ -848,6 +853,7 @@ const translations = {
     noRun: "尚未运行。",
     loadDataset: "请加载数据集",
     noSeries: "请选择项目或拟合",
+    zipLaunchWarning: "检测到软件可能正在从 Windows 临时 ZIP 目录运行。请先解压 ZIP 文件，再从解压后的文件夹启动 Auto DRT Analyzer。",
     data: "数据",
     fit: "拟合",
     statusAnalyzed: "已分析",
@@ -981,6 +987,8 @@ renderDrtRegionList();
 drawEmptyCharts();
 renderCircuitModel();
 syncAreaControls();
+updateStartupWarning();
+setupResponsiveCharts();
 
 el.fileInput.addEventListener("change", handleFiles);
 el.sampleBtn.addEventListener("click", loadSample);
@@ -1170,6 +1178,7 @@ document.querySelectorAll(".tab").forEach((button) => {
     document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
     button.classList.add("active");
     document.getElementById(`${button.dataset.tab}Panel`).classList.add("active");
+    scheduleChartResize();
   });
 });
 
@@ -1437,6 +1446,41 @@ function redrawCharts() {
     renderResult(state.result);
   } else {
     renderNoActiveResult();
+  }
+}
+
+
+function scheduleChartResize() {
+  if (state.resizeFrame) cancelAnimationFrame(state.resizeFrame);
+  state.resizeFrame = requestAnimationFrame(() => {
+    state.resizeFrame = 0;
+    redrawCharts();
+  });
+}
+
+function setupResponsiveCharts() {
+  const charts = [el.nyquistChart, el.bodeMagnitudeChart, el.bodePhaseChart, el.drtChart, el.residualChart].filter(Boolean);
+  if ("ResizeObserver" in window) {
+    state.chartResizeObserver = new ResizeObserver(() => scheduleChartResize());
+    charts.forEach((chart) => state.chartResizeObserver.observe(chart));
+  }
+  window.addEventListener("resize", scheduleChartResize);
+  window.addEventListener("orientationchange", scheduleChartResize);
+}
+
+function isLikelyWindowsZipTempLaunch() {
+  const href = decodeURIComponent(String(window.location.href || "")).replace(/\\/g, "/");
+  return /^file:/i.test(href) && /\/AppData\/Local\/Temp\//i.test(href);
+}
+
+function updateStartupWarning() {
+  if (!el.startupWarning) return;
+  if (isLikelyWindowsZipTempLaunch()) {
+    el.startupWarning.textContent = t("zipLaunchWarning");
+    el.startupWarning.hidden = false;
+  } else {
+    el.startupWarning.hidden = true;
+    el.startupWarning.textContent = "";
   }
 }
 
@@ -2511,6 +2555,7 @@ function applyLanguage(language) {
   renderProjectList();
   renderDrtRegionList();
   renderDrtAreaAnalysis();
+  updateStartupWarning();
 
   const topActions = document.querySelector(".top-actions");
   if (topActions) topActions.setAttribute("aria-label", t("analysisActions"));
@@ -4826,7 +4871,6 @@ function drawDrtOverlayChart() {
     yScale: "linear",
     xDomain: getDomain(domainValues, "log", false),
     forceZeroY: true,
-    height: 368,
     margin: { left: 68, right: 26, top: 44, bottom: 54 },
     lineWidth: activeStyle.lineWidth,
     pointRadius: activeStyle.pointRadius,
@@ -4892,10 +4936,23 @@ function drawEmptyCharts() {
   });
 }
 
+function chartViewport(svg, options = {}) {
+  const box = svg.getBoundingClientRect();
+  const fallbackWidth = Number(options.width) || 720;
+  const fallbackHeight = Number(options.height) || 420;
+  const width = Math.max(320, Math.round(box.width || svg.clientWidth || fallbackWidth));
+  const height = Math.max(240, Math.round(box.height || svg.clientHeight || fallbackHeight));
+  return { width, height };
+}
+
 function drawChartMessage(svg, message) {
   clearSvg(svg);
-  svg.setAttribute("viewBox", "0 0 720 420");
-  const text = svgEl("text", { x: 360, y: 210, "text-anchor": "middle", class: "empty-chart" });
+  const { width, height } = chartViewport(svg);
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  svg.dataset.viewWidth = String(width);
+  svg.dataset.viewHeight = String(height);
+  const text = svgEl("text", { x: width / 2, y: height / 2, "text-anchor": "middle", class: "empty-chart" });
   text.textContent = message;
   svg.appendChild(text);
 }
@@ -4903,12 +4960,12 @@ function drawChartMessage(svg, message) {
 function drawLineChart(svg, series, options) {
   clearSvg(svg);
   drawLineChart.clipCounter = (drawLineChart.clipCounter || 0) + 1;
-  const width = Number(options.width) || 720;
-  const height = Number(options.height) || 420;
+  const { width, height } = chartViewport(svg, options);
   const margin = { left: 64, right: 24, top: 22, bottom: 56, ...(options.margin || {}) };
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
+  const plotWidth = Math.max(120, width - margin.left - margin.right);
+  const plotHeight = Math.max(120, height - margin.top - margin.bottom);
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svg.dataset.chartKey = options.chartKey || "";
   svg.dataset.plotLeft = String(margin.left);
   svg.dataset.plotTop = String(margin.top);

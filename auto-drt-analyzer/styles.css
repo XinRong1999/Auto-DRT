@@ -26,7 +26,10 @@
 
 html,
 body {
+  width: 100%;
+  min-width: 0;
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -69,12 +72,16 @@ button:disabled {
 }
 
 .app-shell {
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
 .topbar {
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -115,6 +122,21 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.startup-warning {
+  margin: 10px 14px 0;
+  padding: 10px 12px;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  background: #fff7ed;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.startup-warning[hidden] {
+  display: none;
+}
+
 .language-switch {
   display: inline-flex;
   align-items: center;
@@ -153,9 +175,12 @@ button:disabled {
 }
 
 .workspace {
+  width: 100%;
+  min-width: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  align-items: start;
   min-height: 0;
 }
 
@@ -402,7 +427,9 @@ td:first-child {
 }
 
 .main-area {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   padding: 14px;
   overflow: auto;
 }
@@ -437,6 +464,8 @@ td:first-child {
 
 .tab-panel.active {
   display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .panel-actions {
@@ -452,6 +481,8 @@ td:first-child {
 }
 
 .chart-grid {
+  width: 100%;
+  min-width: 0;
   display: grid;
   gap: 14px;
 }
@@ -469,8 +500,11 @@ td:first-child {
 }
 
 .chart-card {
+  width: 100%;
+  min-width: 0;
   min-height: 360px;
   padding: 12px;
+  overflow: hidden;
   background: var(--chart-bg, var(--surface));
   border-color: var(--chart-border, var(--line));
 }
@@ -510,8 +544,11 @@ td:first-child {
 .chart {
   display: block;
   width: 100%;
+  max-width: 100%;
+  height: auto;
   aspect-ratio: 16 / 10;
   min-height: 300px;
+  overflow: visible;
 }
 
 .chart-card.wide .chart {
