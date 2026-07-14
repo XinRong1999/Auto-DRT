@@ -1,0 +1,5 @@
+Auto DRT Analyzer is packaged as a local macOS app bundle.
+
+The launcher opens this bundled index.html in the default browser.
+All analysis runs locally on the machine.
+No Python, pip, conda, or external DRT package installation is required.
