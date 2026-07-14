@@ -24,10 +24,9 @@ No Python environment or additional installation is required for the browser ver
 
 A packaged desktop application is currently available only for macOS.
 
-For macOS users, open Auto DRT Analyzer.app.
-If macOS blocks the app on the first launch, right-click the app and select Open.
+For macOS users, open Start_Auto_DRT_Analyzer.html.
 
-Windows and Linux desktop versions are not available at this stage. Users on these systems should use the browser version by opening index.html.
+Windows and Linux desktop versions are not available at this stage. Users on these systems should use the browser version by opening Start_Auto_DRT_Analyzer_Windows.html.
 
 ## Key Highlights
 
