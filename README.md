@@ -20,9 +20,7 @@ This tool can run directly in a web browser.
 
 No Python environment or additional installation is required for the browser version.
 
-## Desktop version
-
-A packaged desktop application is currently available only for macOS.
+## How to open
 
 For macOS users, open Start_Auto_DRT_Analyzer.html.
 
