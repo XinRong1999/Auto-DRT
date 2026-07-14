@@ -1,0 +1,24 @@
+{
+  "name": "auto-drt-analyzer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable browser-based EIS fitting and DRT analysis software",
+  "license": "AGPL-3.0",
+  "author": "Xin Rong",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/XinRong1999/Auto-DRT.git"
+  },
+  "scripts": {
+    "build": "node auto-drt-analyzer/tools/build-portable.mjs",
+    "build:macos": "node auto-drt-analyzer/tools/build-portable.mjs --macos",
+    "build:windows": "node auto-drt-analyzer/tools/build-portable.mjs --windows",
+    "build:check": "node auto-drt-analyzer/tools/build-portable.mjs --check",
+    "lint": "node auto-drt-analyzer/tools/static-check.mjs",
+    "test": "node --test auto-drt-analyzer/tests/*.test.mjs",
+    "check": "npm run lint && npm test && npm run build:check"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
