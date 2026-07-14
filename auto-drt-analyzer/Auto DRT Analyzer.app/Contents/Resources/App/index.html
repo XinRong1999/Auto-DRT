@@ -1,0 +1,568 @@
+<!doctype html>
+<!--
+  Auto DRT Analyzer
+  Copyright (C) 2026 Xin Rong
+  Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+  See LICENSE.txt for the full license text.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Auto DRT Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <h1>Auto DRT Analyzer</h1>
+          <span id="statusText">No dataset loaded</span>
+        </div>
+        <div class="top-actions" aria-label="Analysis actions">
+          <div class="language-switch" aria-label="Language">
+            <button class="language-button active" type="button" data-lang="en">EN</button>
+            <button class="language-button" type="button" data-lang="ja">日本語</button>
+            <button class="language-button" type="button" data-lang="zh">中文</button>
+          </div>
+          <button id="sampleBtn" type="button" title="Load synthetic EIS data">Sample</button>
+          <label id="openFileLabel" class="file-button" title="Open EIS files">
+            <span>Open</span>
+            <input id="fileInput" type="file" accept=".csv,.txt,.dat,.dta" multiple>
+          </label>
+          <button id="manualInputBtn" type="button">Paste or Enter Data</button>
+        </div>
+      </header>
+      <div id="startupWarning" class="startup-warning" hidden></div>
+
+      <main class="workspace">
+        <aside class="sidebar" aria-label="Controls and results">
+          <section class="panel">
+            <h2 id="datasetHeading">Dataset</h2>
+            <button id="analyzeBtn" type="button" disabled>Analyze</button>
+            <details id="advancedSettings" class="settings-details">
+              <summary id="advancedSettingsSummary">Advanced settings</summary>
+              <label id="fileSelectField" class="field" hidden>
+                <span id="fileLabel">Original file</span>
+                <select id="fileSelect" disabled></select>
+              </label>
+              <div class="project-list-block">
+                <div id="loadedProjectsLabel" class="field-label">Loaded projects</div>
+                <div id="projectList" class="project-list" aria-label="Loaded projects"></div>
+              </div>
+              <section class="range-settings">
+                <h3 id="calcRangeHeading">Calculation frequency range / Hz</h3>
+                <p id="rangeHelpText" class="field-help">Calculation frequency range determines which EIS data points are used for DRT inversion.</p>
+                <div class="field-grid">
+                  <label class="field">
+                    <span id="calcFreqMinLabel">Minimum frequency for calculation / Hz</span>
+                    <input id="calcFreqMinInput" type="number" step="any" min="0">
+                  </label>
+                  <label class="field">
+                    <span id="calcFreqMaxLabel">Maximum frequency for calculation / Hz</span>
+                    <input id="calcFreqMaxInput" type="number" step="any" min="0">
+                  </label>
+                </div>
+              </section>
+              <div class="field-grid">
+                <label class="field">
+                  <span id="gridLabel">DRT points</span>
+                  <input id="gridSizeInput" type="number" min="40" max="140" step="10" value="80">
+                </label>
+                <label class="field">
+                  <span id="lambdaLabel">λ</span>
+                  <select id="lambdaModeSelect">
+                    <option value="auto">Auto</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </label>
+              </div>
+              <label class="field">
+                <span id="analysisModeLabel">Analysis mode</span>
+                <select id="analysisModeSelect">
+                  <option value="balanced" selected>Balanced</option>
+                  <option value="fit">Fit priority</option>
+                  <option value="smooth">DRT smooth</option>
+                </select>
+              </label>
+              <label class="field" id="manualLambdaField" hidden>
+                <span id="manualLambdaLabel">Manual λ</span>
+                <input id="manualLambdaInput" type="number" step="any" min="1e-6" max="1" value="0.001">
+              </label>
+              <label class="field">
+                <span id="tauPaddingLabel">Tau padding</span>
+                <select id="tauPaddingSelect">
+                  <option value="3">0.5 decade</option>
+                  <option value="10" selected>1 decade</option>
+                  <option value="30">1.5 decades</option>
+                </select>
+              </label>
+              <label class="check-field advanced-check">
+                <input id="fixRsInput" type="checkbox">
+                <span id="fixRsLabel">Fix Rohm / Rs</span>
+              </label>
+              <label class="field" id="rsValueField" hidden>
+                <span id="rsValueLabel">Rohm / Rs value</span>
+                <input id="rsValueInput" type="number" step="any" min="0">
+              </label>
+              <section class="region-settings">
+                <div class="section-head">
+                  <h3 id="drtRegionHeading">DRT frequency regions</h3>
+                  <button id="addDrtRegionBtn" type="button">Add region</button>
+                </div>
+                <div id="drtRegionList" class="region-list"></div>
+              </section>
+            </details>
+          </section>
+
+          <details id="graphSettings" class="panel settings-details">
+            <summary id="graphHeading">Graph settings</summary>
+            <details id="projectPreferences" class="nested-settings">
+              <summary id="projectPreferencesSummary">Project preferences</summary>
+              <label class="field">
+                <span id="projectNameLabel">Project name</span>
+                <input id="projectNameInput" type="text" disabled autocomplete="off">
+              </label>
+              <div class="toggle-row">
+                <label class="check-field">
+                  <input id="showDataInput" type="checkbox" checked>
+                  <span id="showDataLabel">Data</span>
+                </label>
+                <label class="check-field">
+                  <input id="showFitInput" type="checkbox" checked>
+                  <span id="showFitLabel">Fit</span>
+                </label>
+                <label class="check-field">
+                  <input id="showDrtInput" type="checkbox" checked>
+                  <span id="showDrtLabel">DRT</span>
+                </label>
+              </div>
+              <label class="field">
+                <span id="labelSizeLabel">Label size</span>
+                <div class="slider-row">
+                  <input id="labelSizeInput" type="range" min="8" max="20" step="1" value="12">
+                  <span id="labelSizeValue">12</span>
+                </div>
+              </label>
+              <div class="field-grid">
+                <label class="field color-field">
+                  <span id="dataColorLabel">Project color</span>
+                  <input id="dataColorInput" type="color" value="#111827">
+                </label>
+                <label class="field color-field">
+                  <span id="fitColorLabel">Fit color</span>
+                  <input id="fitColorInput" type="color" value="#b45309">
+                </label>
+              </div>
+              <label class="field color-field">
+                <span id="pointColorLabel">Peak color</span>
+                <input id="pointColorInput" type="color" value="#b45309">
+              </label>
+              <label class="field">
+                <span id="pointShapeLabel">Point shape</span>
+                <select id="pointShapeSelect">
+                  <option value="circle" selected>Circle</option>
+                  <option value="square">Square</option>
+                  <option value="triangle">Triangle</option>
+                  <option value="diamond">Diamond</option>
+                  <option value="cross">Cross</option>
+                </select>
+              </label>
+              <label class="field">
+                <span id="pointSizeLabel">Point size</span>
+                <div class="slider-row">
+                  <input id="pointSizeInput" type="range" min="2" max="12" step="0.5" value="4">
+                  <span id="pointSizeValue">4</span>
+                </div>
+              </label>
+              <label class="field">
+                <span id="peakSensitivityLabel">Peak sensitivity</span>
+                <select id="peakSensitivitySelect">
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high" selected>High</option>
+                </select>
+              </label>
+            </details>
+          </details>
+        </aside>
+
+        <section class="main-area">
+          <nav class="tabs" aria-label="Views">
+            <button class="tab active" type="button" data-tab="eis">EIS</button>
+            <button class="tab" type="button" data-tab="drt">DRT</button>
+            <button id="diagnosticsTab" class="tab" type="button" data-tab="diagnostics">Diagnostics</button>
+          </nav>
+
+          <section id="eisPanel" class="tab-panel active" aria-label="EIS plots">
+            <div class="panel-actions">
+              <button id="exportFitDataBtn" type="button" disabled>Export Fit Data</button>
+            </div>
+            <div class="chart-grid eis-grid">
+              <article class="chart-card">
+                <div class="chart-head">
+                  <h2>Nyquist</h2>
+                  <button class="chart-save-btn" type="button" data-chart-key="nyquist" disabled>Save</button>
+                </div>
+                <svg id="nyquistChart" class="chart" role="img" aria-label="Nyquist chart"></svg>
+                <div class="circuit-display" aria-label="Equivalent circuit">
+                  <div class="circuit-head">
+                    <h3 id="equivalentCircuitHeading">Equivalent circuit</h3>
+                    <button id="saveCircuitBtn" class="chart-save-btn" type="button" data-chart-key="circuit" disabled>Save circuit</button>
+                  </div>
+                  <div class="circuit-text-row">
+                    <span id="equivalentCircuitLabel">Text mode:</span>
+                    <strong id="equivalentCircuitText">Rs - (R1 || CPE1) - (R2 || CPE2)</strong>
+                  </div>
+                  <div class="circuit-mode-label" id="diagramModeLabel">Diagram mode:</div>
+                  <svg id="circuitDiagram" class="circuit-diagram" viewBox="0 0 640 120" role="img" aria-label="Equivalent circuit diagram"></svg>
+                  <details id="circuitSettings" class="nested-settings">
+                    <summary id="circuitSettingsSummary">Circuit settings</summary>
+                    <div class="circuit-builder">
+                      <label class="field">
+                        <span id="seriesElementsLabel">Series elements</span>
+                        <select id="circuitElementList" size="4"></select>
+                      </label>
+                      <label class="field">
+                        <span id="elementTypeLabel">Element type</span>
+                        <select id="addCircuitElementSelect">
+                          <option value="r_cpe" selected>R || CPE</option>
+                          <option value="r">R</option>
+                          <option value="c">C</option>
+                          <option value="cpe">CPE</option>
+                          <option value="w">W</option>
+                          <option value="r_c">R || C</option>
+                          <option value="r_w">R || W</option>
+                          <option value="cpe_w">CPE || W</option>
+                          <option value="r_cpe_w">R || CPE || W</option>
+                        </select>
+                      </label>
+                      <div class="builder-actions">
+                        <button id="removeCircuitElementBtn" class="chart-save-btn" type="button">Delete selected</button>
+                        <button id="resetCircuitBtn" class="chart-save-btn" type="button">Reset default</button>
+                        <button id="addCircuitElementBtn" class="chart-save-btn" type="button">Add element</button>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+                <div class="fit-params">
+                  <div class="fit-params-head">
+                    <h3 id="fitParamsHeading">Fitting parameters</h3>
+                    <button id="refitBtn" class="chart-save-btn refit-button" type="button" disabled>Refit</button>
+                  </div>
+                  <p id="fitStatusText" class="fit-status">Fitting status: updated</p>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th id="fitParamHeader">Parameter</th>
+                          <th id="fitValueHeader">Value</th>
+                          <th id="fitUnitHeader">Unit</th>
+                          <th id="fitNoteHeader">Note</th>
+                        </tr>
+                      </thead>
+                      <tbody id="fitParamsBody">
+                        <tr><td colspan="4">-</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </article>
+              <article class="chart-card">
+                <div class="chart-head">
+                  <h2 id="bodeMagnitudeHeading">Bode magnitude</h2>
+                  <button class="chart-save-btn" type="button" data-chart-key="bodeMagnitude" disabled>Save</button>
+                </div>
+                <svg id="bodeMagnitudeChart" class="chart" role="img" aria-label="Bode magnitude chart"></svg>
+              </article>
+              <article class="chart-card">
+                <div class="chart-head">
+                  <h2 id="bodePhaseHeading">Bode phase</h2>
+                  <button class="chart-save-btn" type="button" data-chart-key="bodePhase" disabled>Save</button>
+                </div>
+                <svg id="bodePhaseChart" class="chart" role="img" aria-label="Bode phase chart"></svg>
+              </article>
+            </div>
+            <section class="panel page-summary">
+              <h2 id="eisQualityHeading">EIS fitting quality</h2>
+              <dl class="summary-list summary-grid">
+                <div><dt id="eisPointsLabel">Points</dt><dd id="eisQualityPoints">-</dd></div>
+                <div><dt id="eisFrequencyLabel">Frequency</dt><dd id="eisQualityFreq">-</dd></div>
+                <div><dt>Rinf</dt><dd id="eisQualityRinf">-</dd></div>
+                <div><dt>RMSE</dt><dd id="eisQualityRmse">-</dd></div>
+              </dl>
+            </section>
+          </section>
+
+          <section id="drtPanel" class="tab-panel" aria-label="DRT plots">
+            <div class="drt-actions">
+              <button id="detectPeaksBtn" type="button" disabled>Detect DRT peaks</button>
+              <button id="drtDiagnosticsBtn" type="button" disabled>DRT Diagnostics</button>
+              <button id="exportExcelBtn" type="button" disabled title="Export current DRT x-y data">Export DRT Data</button>
+              <label class="check-field compact-check">
+                <input id="showPeaksInput" type="checkbox">
+                <span id="showPeaksLabel">Show DRT peaks</span>
+              </label>
+            </div>
+            <div class="chart-grid drt-grid">
+              <article class="chart-card wide">
+                <div class="chart-head">
+                  <h2 id="distributionHeading">DRT</h2>
+                  <button class="chart-save-btn" type="button" data-chart-key="drt" disabled>Save</button>
+                </div>
+                <svg id="drtChart" class="chart" role="img" aria-label="DRT chart"></svg>
+              </article>
+            </div>
+            <section class="panel page-summary">
+              <h2 id="summaryHeading">DRT summary</h2>
+              <dl class="summary-list summary-grid">
+                <div><dt id="pointsLabel">Points</dt><dd id="summaryPoints">-</dd></div>
+                <div><dt id="frequencyLabel">Frequency</dt><dd id="summaryFreq">-</dd></div>
+                <div><dt id="selectedLambdaLabel">Selected λ</dt><dd id="summaryLambda">-</dd></div>
+                <div><dt id="peaksSummaryLabel">Detected peaks</dt><dd id="summaryPeaks">-</dd></div>
+                <div><dt id="drtXAxisModeLabel">DRT x-axis mode</dt><dd id="summaryDrtAxis">-</dd></div>
+                <div><dt id="drtYAxisLabelLabel">DRT y-axis label</dt><dd id="summaryDrtYLabel">-</dd></div>
+              </dl>
+            </section>
+            <section class="panel peaks-panel drt-peaks-panel">
+              <h2 id="peaksHeading">DRT peaks</h2>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th id="peakProjectHeader">Project name</th>
+                      <th id="peakNameHeader">Peak name</th>
+                      <th id="peakNumberHeader">Peak number</th>
+                      <th id="peakSourceHeader">Source</th>
+                      <th id="peakFrequencyHeader">Frequency / Hz</th>
+                      <th id="peakTauHeader">tau / s</th>
+                      <th id="peakGammaHeader">gamma</th>
+                      <th id="peakRelativeHeader">Relative intensity</th>
+                      <th id="peakProcessHeader">Suggested process</th>
+                    </tr>
+                  </thead>
+                  <tbody id="peaksTableBody">
+                    <tr><td colspan="9">-</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section class="panel peaks-panel">
+              <h2 id="drtAreaHeading">DRT area analysis</h2>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th id="areaProjectHeader">Project name</th>
+                      <th id="areaRegionHeader">Region</th>
+                      <th id="areaLowerHeader">Lower Hz</th>
+                      <th id="areaUpperHeader">Upper Hz</th>
+                      <th id="areaValueHeader">Area</th>
+                    </tr>
+                  </thead>
+                  <tbody id="drtAreaTableBody">
+                    <tr><td colspan="5">-</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section id="diagnosticsPanel" class="tab-panel" aria-label="Run diagnostics">
+            <article class="chart-card diagnostics-chart">
+              <div class="chart-head">
+                <h2 id="residualHeading">Relative residual</h2>
+                <button class="chart-save-btn" type="button" data-chart-key="residual" disabled>Save</button>
+              </div>
+              <svg id="residualChart" class="chart" role="img" aria-label="Residual chart"></svg>
+            </article>
+            <article class="diagnostics">
+              <h2 id="runLogHeading">Run log</h2>
+              <pre id="runLog">No run yet.</pre>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+
+
+    <dialog id="drtDiagnosticsDialog" class="range-dialog diagnostics-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <div class="dialog-head">
+          <h2 id="drtDiagnosticsHeading">DRT Diagnostics</h2>
+          <button id="drtDiagnosticsCloseBtn" class="icon-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="drtDiagnosticsHelp" class="dialog-context">Input, solver, and plotting checks for the current DRT result.</p>
+        <pre id="drtDiagnosticsText" class="diagnostics-pre">-</pre>
+        <div class="dialog-actions">
+          <button id="drtDiagnosticsOkBtn" type="button">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="manualDataDialog" class="range-dialog import-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <div class="dialog-head">
+          <h2 id="manualDataHeading">Paste or Enter Data</h2>
+          <button id="manualDataCloseBtn" class="icon-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="manualDataHelp" class="dialog-context">Paste Frequency, Zreal, and Zimag columns, or enter rows manually.</p>
+        <label class="field">
+          <span id="pasteDataLabel">Paste table data</span>
+          <textarea id="manualDataTextarea" class="import-textarea" spellcheck="false" placeholder="Frequency	Zreal	Zimag&#10;100000	0.82	-0.03"></textarea>
+        </label>
+        <div class="dialog-actions import-actions">
+          <button id="parseManualPasteBtn" type="button">Preview pasted data</button>
+          <button id="addManualRowBtn" type="button">Add row</button>
+          <button id="clearManualRowsBtn" type="button">Clear rows</button>
+        </div>
+        <label class="check-field range-auto">
+          <input id="manualAutoSortInput" type="checkbox" checked>
+          <span id="manualAutoSortLabel">Auto sort by frequency</span>
+        </label>
+        <div class="table-wrap manual-data-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="manualFrequencyHeader">Frequency</th>
+                <th id="manualZrealHeader">Zreal</th>
+                <th id="manualZimagHeader">Zimag</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="manualRowsBody"></tbody>
+          </table>
+        </div>
+        <p id="manualDataError" class="dialog-error" hidden></p>
+        <div class="dialog-actions">
+          <button id="manualDataCancelBtn" type="button">Cancel</button>
+          <button id="manualDataPreviewBtn" type="button">Preview import</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="importPreviewDialog" class="range-dialog import-preview-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <div class="dialog-head">
+          <h2 id="importPreviewHeading">Confirm column mapping</h2>
+          <button id="importPreviewCloseBtn" class="icon-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="importPreviewHelp" class="dialog-context">Review detected columns before importing. Internal data will be stored as Frequency, Zreal, and Im(Z).</p>
+        <dl class="import-summary">
+          <div><dt id="importSourceLabel">Source</dt><dd id="importSourceName">-</dd></div>
+          <div><dt id="importConfidenceLabel">Detection confidence</dt><dd id="importConfidence">-</dd></div>
+          <div><dt id="importPointCountLabel">Valid data points</dt><dd id="importPointCount">-</dd></div>
+          <div><dt id="importFreqRangeLabel">Frequency range</dt><dd id="importFrequencyRange">-</dd></div>
+          <div><dt id="importIgnoredRowsLabel">Ignored rows</dt><dd id="importIgnoredRows">-</dd></div>
+        </dl>
+        <p id="importWarning" class="dialog-error" hidden></p>
+        <div class="field-grid import-mapping-grid">
+          <label class="field">
+            <span id="frequencyColumnLabel">Frequency column</span>
+            <select id="importFrequencySelect"></select>
+          </label>
+          <label class="field">
+            <span id="zrealColumnLabel">Zreal column</span>
+            <select id="importZrealSelect"></select>
+          </label>
+          <label class="field">
+            <span id="zimagColumnLabel">Zimag column</span>
+            <select id="importZimagSelect"></select>
+          </label>
+          <label class="field">
+            <span id="imaginaryFormatLabel">Imaginary format</span>
+            <select id="importImagSignSelect">
+              <option value="im">Im(Z)</option>
+              <option value="negIm">-Im(Z)</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap import-preview-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th id="previewRowHeader">Row</th>
+                <th id="previewFrequencyHeader">Frequency</th>
+                <th id="previewZrealHeader">Zreal</th>
+                <th id="previewZimagHeader">Zimag input</th>
+                <th id="previewInternalImagHeader">Stored Im(Z)</th>
+                <th id="previewStatusHeader">Status</th>
+              </tr>
+            </thead>
+            <tbody id="importPreviewBody"></tbody>
+          </table>
+        </div>
+        <p id="importPreviewError" class="dialog-error" hidden></p>
+        <div class="dialog-actions">
+          <button id="importPreviewCancelBtn" type="button">Cancel</button>
+          <button id="importPreviewBackBtn" type="button">Back</button>
+          <button id="importPreviewConfirmBtn" type="button">Confirm import</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="axisRangeDialog" class="range-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <div class="dialog-head">
+          <h2 id="axisRangeHeading">Axis range</h2>
+          <button id="axisRangeCloseBtn" class="icon-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="axisRangeChartLabel" class="dialog-context"></p>
+        <label id="axisExpressionField" class="field" hidden>
+          <span id="axisExpressionLabel">Axis label</span>
+          <select id="axisExpressionSelect"></select>
+        </label>
+        <label id="electrodeAreaField" class="field" hidden>
+          <span id="electrodeAreaLabel">Electrode area / cm²</span>
+          <input id="electrodeAreaInput" type="number" step="any" min="0">
+        </label>
+        <label class="check-field range-auto">
+          <input id="axisRangeAutoInput" type="checkbox" checked>
+          <span id="axisRangeAutoLabel">Auto range</span>
+        </label>
+        <div class="field-grid">
+          <label class="field">
+            <span id="axisRangeMinLabel">Minimum</span>
+            <input id="axisRangeMinInput" type="number" step="any">
+          </label>
+          <label class="field">
+            <span id="axisRangeMaxLabel">Maximum</span>
+            <input id="axisRangeMaxInput" type="number" step="any">
+          </label>
+        </div>
+        <p id="axisRangeError" class="dialog-error" hidden></p>
+        <div class="dialog-actions">
+          <button id="axisRangeResetBtn" type="button">Reset</button>
+          <button id="axisRangeApplyBtn" type="button">Apply</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="figureSaveDialog" class="range-dialog">
+      <form method="dialog" class="range-dialog-body">
+        <div class="dialog-head">
+          <h2 id="saveFigureHeading">Save figure</h2>
+          <button id="figureSaveCloseBtn" class="icon-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="figureSaveChartLabel" class="dialog-context"></p>
+        <label class="field">
+          <span id="figureFormatLabel">Format</span>
+          <select id="figureFormatSelect">
+            <option value="pdf" selected>PDF</option>
+            <option value="svg">SVG</option>
+            <option value="png">PNG</option>
+          </select>
+        </label>
+        <div class="dialog-actions">
+          <button id="figureSaveCancelBtn" type="button">Cancel</button>
+          <button id="figureSaveApplyBtn" type="button">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="drtContextMenu" class="context-menu" hidden></div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
