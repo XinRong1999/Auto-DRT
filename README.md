@@ -2,7 +2,7 @@
 
 Auto DRT Analyzer is a local, browser-based application for electrochemical impedance spectroscopy (EIS) visualization, equivalent-circuit fitting, distribution of relaxation times (DRT) analysis, peak inspection, multi-project comparison, and publication-ready export.
 
-Version: 1.0.0
+Version: 1.0.2
 
 Author: Xin Rong (X. Rong)
 
@@ -467,7 +467,7 @@ Auto DRT Analyzer is licensed under the GNU Affero General Public License v3.0. 
 
 Please cite the archived software release:
 
-    Xin Rong. Auto DRT Analyzer, version 1.0.0.
+    Xin Rong. Auto DRT Analyzer, version 1.0.2.
     Zenodo. https://doi.org/10.5281/zenodo.20756983
 
 Citation metadata are also provided in CITATION.cff.
